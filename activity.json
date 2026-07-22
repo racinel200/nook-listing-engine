@@ -18,9 +18,9 @@
     "link": null
   },
   {
-    "date": "2026-07-22T23:13:45Z",
+    "date": "2026-07-22T23:30:32Z",
     "taskId": null,
-    "summary": "Added 5 audit-gap tasks: Goal 2 — A23 site-fix punch list, J27 send it, J26 kill stale domains; Goal 4 — A24 Azulio exit plan, J28 approve + start the 90-day notice (waits on the DSF form swap J12). Board now 52 tasks.",
+    "summary": "tasks.json re-synced as a legacy mirror of the board Sheet (source of truth): 4 goal categories, sheet task numbering (A23/J27/J28 presence, A24/J29 ops), sheet statuses/priorities. 53 tasks.",
     "link": null
   }
 ]
