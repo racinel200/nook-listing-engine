@@ -1,0 +1,14 @@
+[
+  {
+    "date": "2026-07-22T19:22:00Z",
+    "taskId": null,
+    "summary": "Board created from the Seller-Listing Plan + Competitor Listing Playbook: 47 tasks (25 for Jen, 22 for the AI worker) across 6 categories. 14 AI tasks are ready to run immediately; the hourly worker starts on the next cycle.",
+    "link": null
+  },
+  {
+    "date": "2026-07-22T19:43:41Z",
+    "taskId": "A1",
+    "summary": "Connected to GitHub through Jen's Zapier and published the full board + website to racinel200/nook-listing-engine. One step left for the site to go live: Jen turns on GitHub Pages (task J2).",
+    "link": "https://github.com/racinel200/nook-listing-engine"
+  }
+]
