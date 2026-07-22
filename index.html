@@ -208,13 +208,23 @@ function toObjects(rows){
   return rows.slice(1).filter(function(r){return r.join('').trim()!=='';}).map(function(r){
     var o={}; hdr.forEach(function(h,i){o[h]=(r[i]||'').trim();}); return o; });
 }
-function fetchTab(name){
+function fetchRows(name){
   return fetch(SHEET+encodeURIComponent(name)).then(function(r){
     if(!r.ok) throw new Error('HTTP '+r.status);
     return r.text();
   }).then(function(t){
     if(t.trim().charAt(0)==='<') throw new Error('not shared');
-    return toObjects(parseCSV(t));
+    return parseCSV(t);
+  });
+}
+function fetchTab(name,requiredCol){
+  return fetchRows(name).then(function(rows){
+    if(!rows.length) return [];
+    var hdr=rows[0].map(function(h){return String(h).trim().toLowerCase();});
+    /* gviz falls back to the first tab when the named tab doesn't exist yet —
+       requiredCol lets us detect that and treat the tab as empty instead */
+    if(requiredCol&&hdr.indexOf(requiredCol)<0) return [];
+    return toObjects(rows);
   });
 }
 
@@ -416,12 +426,12 @@ function showSetup(){
     +'<div class="steps"><b>One click fixes it:</b><br>Open the Board Sheet (link above) \u2192 Share \u2192 General access: <b>Anyone with the link</b> \u2192 Viewer \u2192 Done.<br>Then refresh this page.</div>';
 }
 Promise.all([
-  fetchTab('Config').catch(function(){return [];}),
-  fetchTab('Tasks'),
-  fetchTab('Activity').catch(function(){return [];}),
-  fetchTab('Notes').catch(function(){return [];})
+  fetchRows('Config').catch(function(){return [];}),
+  fetchTab('Tasks','id'),
+  fetchTab('Activity','summary').catch(function(){return [];}),
+  fetchTab('Notes','note').catch(function(){return [];})
 ]).then(function(res){
-  res[0].forEach(function(r){var k=(r.key||'').trim(),v=(r.value||'').trim();if(k&&CONFIG.hasOwnProperty(k))CONFIG[k]=v;});
+  res[0].forEach(function(r){var k=String(r[0]||'').trim(),v=String(r[1]||'').trim();if(k&&CONFIG.hasOwnProperty(k))CONFIG[k]=v;});
   DATA.tasks=res[1];
   DATA.activity=res[2];
   DATA.notes=res[3];
