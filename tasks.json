@@ -1,0 +1,614 @@
+{
+  "meta": {
+    "title": "Nook Listing Engine",
+    "subtitle": "Seller-listing lead plan — shared board for Jen + the AI worker",
+    "updated": "2026-07-22T19:43:41Z",
+    "repo": "racinel200/nook-listing-engine",
+    "pages_url": "https://racinel200.github.io/nook-listing-engine/",
+    "worker": "Claude · hourly · exits quietly when nothing is actionable",
+    "processedIssues": []
+  },
+  "legend": {
+    "jen": "For Jen — do it, then mark done (button here or tell Claude). Completing it can unlock AI tasks.",
+    "ai": "For the AI worker — picked up automatically on an hourly run once unblocked."
+  },
+  "categories": [
+    {
+      "id": "setup",
+      "name": "System Setup",
+      "plan": "This system"
+    },
+    {
+      "id": "foundation",
+      "name": "Foundation & Proof",
+      "plan": "Seller-Listing Plan §A + Competitor Playbook"
+    },
+    {
+      "id": "capture",
+      "name": "Capture Engine",
+      "plan": "Seller-Listing Plan §B"
+    },
+    {
+      "id": "jentime",
+      "name": "Jen-Time Channels",
+      "plan": "Seller-Listing Plan §C + Playbook"
+    },
+    {
+      "id": "zillowcrm",
+      "name": "Zillow & CRM Ops",
+      "plan": "Seller-Listing Plan §D + CRM Plan Phase 1"
+    },
+    {
+      "id": "playbook",
+      "name": "Competitor Content Steals",
+      "plan": "Competitor Listing Playbook"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "J1",
+      "type": "jen",
+      "category": "setup",
+      "status": "done",
+      "deps": [],
+      "unlocks": [
+        "J3"
+      ],
+      "title": "Create the GitHub repo",
+      "detail": "Go to github.com/new → Repository name: nook-listing-engine → Public → Create repository (no README needed). Then tell Claude your GitHub username.",
+      "result": "Repo created 7/22 ✓"
+    },
+    {
+      "id": "J3",
+      "type": "jen",
+      "category": "setup",
+      "status": "done",
+      "deps": [
+        "J1"
+      ],
+      "unlocks": [
+        "A1"
+      ],
+      "title": "Create a repo token and paste it to Claude",
+      "detail": "github.com → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token. Name: nook-worker. Repository access: Only select repositories → nook-listing-engine. Permissions → Repository permissions: Contents = Read and write, Issues = Read and write. Generate, copy, and paste it into any Claude chat in this project.",
+      "result": "Done — connected via Zapier GitHub instead (paste-token route retired; revoke the token if you haven’t)"
+    },
+    {
+      "id": "A1",
+      "type": "ai",
+      "category": "setup",
+      "status": "done",
+      "deps": [
+        "J3"
+      ],
+      "unlocks": [
+        "J2"
+      ],
+      "title": "Publish the board + website to GitHub",
+      "detail": "Push all files, set repo links on the board, verify everything renders.",
+      "result": "Board + site published to the repo ✓"
+    },
+    {
+      "id": "J2",
+      "type": "jen",
+      "category": "setup",
+      "status": "todo",
+      "deps": [
+        "A1"
+      ],
+      "unlocks": [
+        "J4"
+      ],
+      "title": "Turn on GitHub Pages",
+      "detail": "Repo → Settings → Pages → Source: Deploy from a branch → Branch: main, folder / (root) → Save. Site appears at <username>.github.io/nook-listing-engine in ~2 minutes."
+    },
+    {
+      "id": "J4",
+      "type": "jen",
+      "category": "setup",
+      "status": "blocked",
+      "deps": [
+        "J2"
+      ],
+      "unlocks": [],
+      "title": "Open the live board and bookmark it",
+      "detail": "Confirm the site loads and the Mark-done buttons work (they open a pre-filled GitHub issue — just click Submit)."
+    },
+    {
+      "id": "A2",
+      "type": "ai",
+      "category": "foundation",
+      "status": "todo",
+      "deps": [],
+      "unlocks": [
+        "J5"
+      ],
+      "title": "Draft the “How We Launch Your Listing” page",
+      "detail": "The listing-marketing page none of the top-3 competitors has: photography/drone/twilight, video tour, staging consult, single-property site, Zillow Showcase, targeted Meta ads, luxury syndication. Written for nook-realty.com + reusable in listing presentations."
+    },
+    {
+      "id": "J5",
+      "type": "jen",
+      "category": "foundation",
+      "status": "blocked",
+      "deps": [
+        "A2"
+      ],
+      "unlocks": [],
+      "title": "Review the listing-marketing page draft → publish",
+      "detail": "Approve/edit the draft, then publish to the site (or send to your web person). This page also becomes the spine of your listing presentation."
+    },
+    {
+      "id": "J6",
+      "type": "jen",
+      "category": "foundation",
+      "status": "todo",
+      "deps": [],
+      "unlocks": [
+        "A3"
+      ],
+      "title": "Send 4–6 past luxury solds for the proof gallery",
+      "detail": "Addresses + sold prices you're comfortable showing (career range runs to $5.4M — that proof is currently invisible online). Photos if you have them."
+    },
+    {
+      "id": "A3",
+      "type": "ai",
+      "category": "foundation",
+      "status": "blocked",
+      "deps": [
+        "J6"
+      ],
+      "unlocks": [],
+      "title": "Draft the luxury sold-gallery page + credential blurbs",
+      "detail": "Sold gallery copy plus the credential stack (CLHMS, ~$65M career, $5.4M top sale, years in DS) in versions for: website header, IG bio, email signature, listing deck."
+    },
+    {
+      "id": "J7",
+      "type": "jen",
+      "category": "foundation",
+      "status": "todo",
+      "deps": [],
+      "unlocks": [],
+      "title": "Confirm CLHMS membership is current",
+      "detail": "Log in at luxuryhomemarketing.com and check status — luxury sellers check the directory, and you're currently not findable in it."
+    },
+    {
+      "id": "A4",
+      "type": "ai",
+      "category": "foundation",
+      "status": "todo",
+      "deps": [],
+      "unlocks": [
+        "J8"
+      ],
+      "title": "Draft review-request batch #1 (engineered prompts)",
+      "detail": "Personalized drafts to past closed clients, prompting property type / neighborhood / days-on-market mentions so reviews do SEO work. Drafts only — nothing sends without approval."
+    },
+    {
+      "id": "J8",
+      "type": "jen",
+      "category": "foundation",
+      "status": "blocked",
+      "deps": [
+        "A4"
+      ],
+      "unlocks": [],
+      "title": "Approve & send review batch #1",
+      "detail": "Goal: 25–40 Zillow reviews by Oct 31 (you have 8; the local benchmark is 77)."
+    },
+    {
+      "id": "J9",
+      "type": "jen",
+      "category": "foundation",
+      "status": "todo",
+      "deps": [],
+      "unlocks": [
+        "A5"
+      ],
+      "title": "Confirm Google Business Profile owner access",
+      "detail": "Check business.google.com — do you have (or can you claim) the Nook Realty / Jen Ferrara profile?"
+    },
+    {
+      "id": "A5",
+      "type": "ai",
+      "category": "foundation",
+      "status": "blocked",
+      "deps": [
+        "J9"
+      ],
+      "unlocks": [],
+      "title": "Draft the GBP optimization package",
+      "detail": "Categories, description targeting “Dripping Springs listing agent”, services, posts cadence, review link wiring."
+    },
+    {
+      "id": "J10",
+      "type": "jen",
+      "category": "foundation",
+      "status": "todo",
+      "deps": [],
+      "unlocks": [
+        "A6"
+      ],
+      "title": "Zillow: claim Zillow Pro + pick the canonical profile",
+      "detail": "Zillow Pro is free for Preferred partners through 2026. You have 3 fragmented profiles; pick the keeper (likely the 5.0★ one) so consolidation can start."
+    },
+    {
+      "id": "A6",
+      "type": "ai",
+      "category": "foundation",
+      "status": "blocked",
+      "deps": [
+        "J10"
+      ],
+      "unlocks": [],
+      "title": "Draft Zillow profile consolidation + optimized copy",
+      "detail": "The consolidation request to Zillow support + rewritten profile copy (Nook branding, luxury + DS positioning, review strategy)."
+    },
+    {
+      "id": "J11",
+      "type": "jen",
+      "category": "capture",
+      "status": "todo",
+      "deps": [],
+      "unlocks": [
+        "A7"
+      ],
+      "title": "Verify RealScout subscription (active? who pays?)",
+      "detail": "Determines the valuation-funnel engine: RealScout Home Value Alerts if active, budget fallback if not ($179–299/mo if we'd have to start paying)."
+    },
+    {
+      "id": "A7",
+      "type": "ai",
+      "category": "capture",
+      "status": "blocked",
+      "deps": [
+        "J11"
+      ],
+      "unlocks": [],
+      "title": "Spec the instant home-valuation funnel",
+      "detail": "Landing copy + flow with the timeframe qualifier (now / 3 months / 12 months / just curious — stolen from NestHaven) routed to matching FUB stages and Flodesk nurture speeds. No competitor offers an instant valuation — this is the open lane."
+    },
+    {
+      "id": "A8",
+      "type": "ai",
+      "category": "capture",
+      "status": "todo",
+      "deps": [],
+      "unlocks": [
+        "J12"
+      ],
+      "title": "Draft the DSF seller pages",
+      "detail": "“What's My DSISD Home Worth?” page + gated 2026 DSISD Seller's Guide built on the price-cut narrative (63.5% of DS listings cut price in Q2)."
+    },
+    {
+      "id": "J12",
+      "type": "jen",
+      "category": "capture",
+      "status": "blocked",
+      "deps": [
+        "A8"
+      ],
+      "unlocks": [],
+      "title": "Review & publish the DSF seller pages",
+      "detail": "Approve the drafts, publish on drippingspringsfamilies.com, and swap the Azulio form per the exit plan."
+    },
+    {
+      "id": "J13",
+      "type": "jen",
+      "category": "capture",
+      "status": "todo",
+      "deps": [],
+      "unlocks": [
+        "A9"
+      ],
+      "title": "Meta check: campaigns running? Business Manager access?",
+      "detail": "Two answers needed: are any Meta campaigns currently live, and do you have Ads Manager / Business Manager login access? (Zero Meta-source leads are reaching Nook queues.)"
+    },
+    {
+      "id": "A9",
+      "type": "ai",
+      "category": "capture",
+      "status": "blocked",
+      "deps": [
+        "J13"
+      ],
+      "unlocks": [],
+      "title": "Draft the Meta seller-campaign package",
+      "detail": "3 ad variants (valuation + market-report angles incl. the price-cut hook), homeowner audience spec for DSISD/Wimberley/Driftwood zips, budget split from existing spend, FUB source tagging."
+    },
+    {
+      "id": "A10",
+      "type": "ai",
+      "category": "capture",
+      "status": "todo",
+      "deps": [],
+      "unlocks": [
+        "J14"
+      ],
+      "title": "Research 3 micro-farm neighborhood candidates",
+      "detail": "300–400-home luxury pockets (DS acreage, Lake Travis, Lost Creek) with turnover rates and medians, so the pick is data-based."
+    },
+    {
+      "id": "J14",
+      "type": "jen",
+      "category": "capture",
+      "status": "blocked",
+      "deps": [
+        "A10"
+      ],
+      "unlocks": [
+        "A11"
+      ],
+      "title": "Pick THE micro-farm neighborhood",
+      "detail": "One neighborhood, quarterly mailer, 18–24 month horizon. ~$85–135/mo."
+    },
+    {
+      "id": "A11",
+      "type": "ai",
+      "category": "capture",
+      "status": "blocked",
+      "deps": [
+        "J14"
+      ],
+      "unlocks": [],
+      "title": "Draft postcard #1 (copy + Canva design brief)",
+      "detail": "Just-solds + hyperlocal stat + QR to the valuation page so the farm is measurable."
+    },
+    {
+      "id": "J15",
+      "type": "jen",
+      "category": "capture",
+      "status": "todo",
+      "deps": [],
+      "unlocks": [
+        "A12"
+      ],
+      "title": "Register wimberleyfamilies.com (~$12/yr)",
+      "detail": "It looked unregistered on 7/22. Grab it before someone else does — any registrar works."
+    },
+    {
+      "id": "A12",
+      "type": "ai",
+      "category": "capture",
+      "status": "blocked",
+      "deps": [
+        "J15"
+      ],
+      "unlocks": [],
+      "title": "Scaffold the Wimberley site",
+      "detail": "Page map cloned from the DSF playbook + first 3 community profiles drafted."
+    },
+    {
+      "id": "A13",
+      "type": "ai",
+      "category": "jentime",
+      "status": "todo",
+      "deps": [],
+      "unlocks": [
+        "J16"
+      ],
+      "title": "Video engine: 8-week calendar + script #1 + editor brief",
+      "detail": "“What actually sold in DSISD this month” format. Phone-shot, pro-edited (~$100–200/video). Every video ends on the valuation CTA. For luxury sellers, the videos ARE the listing presentation."
+    },
+    {
+      "id": "J16",
+      "type": "jen",
+      "category": "jentime",
+      "status": "blocked",
+      "deps": [
+        "A13"
+      ],
+      "unlocks": [],
+      "title": "Film video #1 (script provided)",
+      "detail": "~90 minutes: shoot on phone per the script, send the raw file back for editing."
+    },
+    {
+      "id": "A14",
+      "type": "ai",
+      "category": "jentime",
+      "status": "todo",
+      "deps": [],
+      "unlocks": [
+        "J17"
+      ],
+      "title": "Research DS ELITE Real Estate Professionals membership",
+      "detail": "Criteria, dues, who runs it, how to apply. It's visibly how NestHaven's top producers source referral business."
+    },
+    {
+      "id": "J17",
+      "type": "jen",
+      "category": "jentime",
+      "status": "blocked",
+      "deps": [
+        "A14"
+      ],
+      "unlocks": [],
+      "title": "Join DS ELITE (if dues make sense)",
+      "detail": "Zero-ad-spend listing channel; also scouts the Wimberley/Driftwood equivalent."
+    },
+    {
+      "id": "A15",
+      "type": "ai",
+      "category": "jentime",
+      "status": "todo",
+      "deps": [],
+      "unlocks": [
+        "J18"
+      ],
+      "title": "Build the builder/developer target list (5 names)",
+      "detail": "Small DS/Driftwood/Wimberley builders, acreage developers, land sellers — the Sentinel Peak effect (Veritas turned ONE developer relationship into 26 luxury homesites). Contact + angle for each."
+    },
+    {
+      "id": "J18",
+      "type": "jen",
+      "category": "jentime",
+      "status": "blocked",
+      "deps": [
+        "A15"
+      ],
+      "unlocks": [],
+      "title": "Book 2 builder/developer coffees",
+      "detail": "From the target list — the highest-leverage hours in the whole plan."
+    },
+    {
+      "id": "A16",
+      "type": "ai",
+      "category": "jentime",
+      "status": "todo",
+      "deps": [],
+      "unlocks": [
+        "J19"
+      ],
+      "title": "Build the luxury referral-circle list (10 contacts)",
+      "detail": "Wealth managers, estate & divorce attorneys, builders, architects, stagers in Westlake/Lakeway/DS — with a short outreach note drafted for each. Life events drive luxury listings."
+    },
+    {
+      "id": "J19",
+      "type": "jen",
+      "category": "jentime",
+      "status": "blocked",
+      "deps": [
+        "A16"
+      ],
+      "unlocks": [],
+      "title": "Book the first 2 referral-circle meetings",
+      "detail": "One coffee/lunch per month is the pace; these are the first two."
+    },
+    {
+      "id": "A17",
+      "type": "ai",
+      "category": "jentime",
+      "status": "todo",
+      "deps": [],
+      "unlocks": [],
+      "title": "Set up the $750K+ expired/withdrawn routine",
+      "detail": "Tracker template, daily check workflow for Jen's territories, hand-written-note draft, compliance checklist (confirm off-market, no exclusive, DNC). The $2M+ stall makes this list unusually rich right now."
+    },
+    {
+      "id": "A18",
+      "type": "ai",
+      "category": "zillowcrm",
+      "status": "todo",
+      "deps": [],
+      "unlocks": [
+        "J20"
+      ],
+      "title": "Draft the Zillow rep email (Showcase quote + Pro)",
+      "detail": "Request Showcase pricing (~$30–80/listing) and confirm Zillow Pro enrollment. Draft only — queued for approval."
+    },
+    {
+      "id": "J20",
+      "type": "jen",
+      "category": "zillowcrm",
+      "status": "blocked",
+      "deps": [
+        "A18"
+      ],
+      "unlocks": [],
+      "title": "Approve & send the Zillow rep email",
+      "detail": "One click in Gmail once the draft is ready."
+    },
+    {
+      "id": "J21",
+      "type": "jen",
+      "category": "zillowcrm",
+      "status": "todo",
+      "deps": [],
+      "unlocks": [],
+      "title": "Find the Zillow Preferred agreement",
+      "detail": "Two numbers we need: the success-fee % and whether the relationship is portable if you change brokerage. Blocks the broker-license decision."
+    },
+    {
+      "id": "A19",
+      "type": "ai",
+      "category": "zillowcrm",
+      "status": "todo",
+      "deps": [],
+      "unlocks": [
+        "J22"
+      ],
+      "title": "Draft the Sprout admin ask (FUB controls + $750K+ routing)",
+      "detail": "What can Jen control in the shared FUB (Lead Flow, action plans, integrations), plus a request for a $750K+ → Jen routing rule on Nook-bound leads. Draft only."
+    },
+    {
+      "id": "J22",
+      "type": "jen",
+      "category": "zillowcrm",
+      "status": "blocked",
+      "deps": [
+        "A19"
+      ],
+      "unlocks": [],
+      "title": "Approve & send the Sprout ask",
+      "detail": "Determines whether speed-to-lead automation gets set by you or requested from Sprout."
+    },
+    {
+      "id": "A20",
+      "type": "ai",
+      "category": "zillowcrm",
+      "status": "todo",
+      "deps": [],
+      "unlocks": [
+        "J23"
+      ],
+      "title": "Run the stage-hygiene sweep (report only)",
+      "detail": "Nook-scoped FUB read: who's sitting in “Lead” stage too long, proposed stage moves, speed-to-lead gaps. Report goes to the private project (no client names on this public board); writes wait for approval. Zillow Preferred scores this — stage hygiene is revenue."
+    },
+    {
+      "id": "J23",
+      "type": "jen",
+      "category": "zillowcrm",
+      "status": "blocked",
+      "deps": [
+        "A20"
+      ],
+      "unlocks": [],
+      "title": "Approve stage fixes + Meta→FUB feed fix",
+      "detail": "Say yes to the proposed stage moves and the Facebook Lead Ads → FUB reconnection."
+    },
+    {
+      "id": "A21",
+      "type": "ai",
+      "category": "playbook",
+      "status": "todo",
+      "deps": [],
+      "unlocks": [
+        "J24"
+      ],
+      "title": "Write the data-backed “Best Realtors in Dripping Springs 2026” article",
+      "detail": "NestHaven's version has zero data. Ours cites verifiable review counts, sales volume, and DOM — honest, useful, and it outranks theirs. Includes Jen in honest context."
+    },
+    {
+      "id": "J24",
+      "type": "jen",
+      "category": "playbook",
+      "status": "blocked",
+      "deps": [
+        "A21"
+      ],
+      "unlocks": [],
+      "title": "Review & publish the Best-Realtors article on DSF",
+      "detail": "Sensitive one — read it fully before it goes live."
+    },
+    {
+      "id": "A22",
+      "type": "ai",
+      "category": "playbook",
+      "status": "todo",
+      "deps": [],
+      "unlocks": [],
+      "title": "Write acreage-seller article #1",
+      "detail": "“Selling acreage in the Hill Country: wells, septic, ag exemptions, wildlife valuations.” Attacks the ranch/land authority all three competitors lean on. Ends on the valuation CTA."
+    },
+    {
+      "id": "J25",
+      "type": "jen",
+      "category": "playbook",
+      "status": "todo",
+      "deps": [],
+      "unlocks": [],
+      "title": "Ask Sprout/ERA what luxury syndication is included",
+      "detail": "Before paying for JamesEdition-style syndication, check what the brokerage/ERA network already provides."
+    }
+  ]
+}
