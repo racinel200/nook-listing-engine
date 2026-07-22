@@ -16,5 +16,11 @@
     "taskId": null,
     "summary": "Board restructured around Jen's 4 goals: Goal 1 Win Seller Listings (25 tasks), Goal 2 One Online Presence (9), Goal 3 Convert Leads & Zillow Score (7), Goal 4 Tools & Systems (6). Same tasks, same deps — only the grouping changed.",
     "link": null
+  },
+  {
+    "date": "2026-07-22T23:13:45Z",
+    "taskId": null,
+    "summary": "Added 5 audit-gap tasks: Goal 2 — A23 site-fix punch list, J27 send it, J26 kill stale domains; Goal 4 — A24 Azulio exit plan, J28 approve + start the 90-day notice (waits on the DSF form swap J12). Board now 52 tasks.",
+    "link": null
   }
 ]

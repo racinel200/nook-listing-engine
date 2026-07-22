@@ -2,7 +2,7 @@
   "meta": {
     "title": "Nook Listing Engine",
     "subtitle": "Seller-listing lead plan — shared board for Jen + the AI worker",
-    "updated": "2026-07-22T23:06:36Z",
+    "updated": "2026-07-22T23:13:45Z",
     "repo": "racinel200/nook-listing-engine",
     "pages_url": "https://racinel200.github.io/nook-listing-engine/",
     "worker": "Claude · hourly · exits quietly when nothing is actionable",
@@ -278,7 +278,9 @@
       "deps": [
         "A8"
       ],
-      "unlocks": [],
+      "unlocks": [
+        "J28"
+      ],
       "title": "Review & publish the DSF seller pages",
       "detail": "Approve the drafts, publish on drippingspringsfamilies.com, and swap the Azulio form per the exit plan."
     },
@@ -599,6 +601,65 @@
       "unlocks": [],
       "title": "Ask Sprout/ERA what luxury syndication is included",
       "detail": "Before paying for JamesEdition-style syndication, check what the brokerage/ERA network already provides."
+    },
+    {
+      "id": "A23",
+      "type": "ai",
+      "category": "presence",
+      "status": "todo",
+      "deps": [],
+      "unlocks": [
+        "J27"
+      ],
+      "title": "Compile the nookrealtygroup.com fix list",
+      "detail": "Everything the July audit flagged, written as a ready-to-send punch list for the web person: wrong Zillow profile link, NY-area phone number, outdated team page, dead hiFello links, undated blog posts, no gated lead magnets."
+    },
+    {
+      "id": "J27",
+      "type": "jen",
+      "category": "presence",
+      "status": "blocked",
+      "deps": [
+        "A23"
+      ],
+      "unlocks": [],
+      "title": "Send the site-fix list to your web person",
+      "detail": "Review the punch list, then forward it (or apply the fixes yourself in Luxury Presence)."
+    },
+    {
+      "id": "J26",
+      "type": "jen",
+      "category": "presence",
+      "status": "todo",
+      "deps": [],
+      "unlocks": [],
+      "title": "Kill or redirect the stale domains",
+      "detail": "nookaustin.com (stale Side-era site still live) and ferrarahomes.com (redirects to it) → point both at nookrealtygroup.com at the registrar. One canonical brand everywhere."
+    },
+    {
+      "id": "A24",
+      "type": "ai",
+      "category": "ops",
+      "status": "todo",
+      "deps": [],
+      "unlocks": [
+        "J28"
+      ],
+      "title": "Draft the Azulio exit plan",
+      "detail": "Checklist + drafted 90-day notice letter: confirm account ownership, export all GHL contacts, verify DSISD hosting/domain is NOT on GHL (only the form embed appears to be), inventory any other live forms/numbers/automations, replacement-form plan. Draft only — nothing sends."
+    },
+    {
+      "id": "J28",
+      "type": "jen",
+      "category": "ops",
+      "status": "blocked",
+      "deps": [
+        "A24",
+        "J12"
+      ],
+      "unlocks": [],
+      "title": "Approve the Azulio exit + start the 90-day notice clock",
+      "detail": "Waits on the exit plan AND the DSF form swap (J12) so the DSISD funnel never goes dark. Then send the notice."
     }
   ]
 }
