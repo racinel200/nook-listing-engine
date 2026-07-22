@@ -2,7 +2,7 @@
   "meta": {
     "title": "Nook Listing Engine",
     "subtitle": "Seller-listing lead plan — shared board for Jen + the AI worker",
-    "updated": "2026-07-22T19:43:41Z",
+    "updated": "2026-07-22T23:06:36Z",
     "repo": "racinel200/nook-listing-engine",
     "pages_url": "https://racinel200.github.io/nook-listing-engine/",
     "worker": "Claude · hourly · exits quietly when nothing is actionable",
@@ -14,41 +14,31 @@
   },
   "categories": [
     {
-      "id": "setup",
-      "name": "System Setup",
-      "plan": "This system"
+      "id": "listings",
+      "name": "Goal 1 · Win Seller Listings",
+      "plan": "Seller-Listing Plan §B–C + Competitor Playbook"
     },
     {
-      "id": "foundation",
-      "name": "Foundation & Proof",
-      "plan": "Seller-Listing Plan §A + Competitor Playbook"
+      "id": "presence",
+      "name": "Goal 2 · One Online Presence",
+      "plan": "Online-Presence Audit + Seller-Listing Plan §A"
     },
     {
-      "id": "capture",
-      "name": "Capture Engine",
-      "plan": "Seller-Listing Plan §B"
-    },
-    {
-      "id": "jentime",
-      "name": "Jen-Time Channels",
-      "plan": "Seller-Listing Plan §C + Playbook"
-    },
-    {
-      "id": "zillowcrm",
-      "name": "Zillow & CRM Ops",
+      "id": "convert",
+      "name": "Goal 3 · Convert Leads & Zillow Score",
       "plan": "Seller-Listing Plan §D + CRM Plan Phase 1"
     },
     {
-      "id": "playbook",
-      "name": "Competitor Content Steals",
-      "plan": "Competitor Listing Playbook"
+      "id": "ops",
+      "name": "Goal 4 · Tools & Systems",
+      "plan": "This system + tool stack"
     }
   ],
   "tasks": [
     {
       "id": "J1",
       "type": "jen",
-      "category": "setup",
+      "category": "ops",
       "status": "done",
       "deps": [],
       "unlocks": [
@@ -61,7 +51,7 @@
     {
       "id": "J3",
       "type": "jen",
-      "category": "setup",
+      "category": "ops",
       "status": "done",
       "deps": [
         "J1"
@@ -76,7 +66,7 @@
     {
       "id": "A1",
       "type": "ai",
-      "category": "setup",
+      "category": "ops",
       "status": "done",
       "deps": [
         "J3"
@@ -91,7 +81,7 @@
     {
       "id": "J2",
       "type": "jen",
-      "category": "setup",
+      "category": "ops",
       "status": "todo",
       "deps": [
         "A1"
@@ -105,7 +95,7 @@
     {
       "id": "J4",
       "type": "jen",
-      "category": "setup",
+      "category": "ops",
       "status": "blocked",
       "deps": [
         "J2"
@@ -117,7 +107,7 @@
     {
       "id": "A2",
       "type": "ai",
-      "category": "foundation",
+      "category": "listings",
       "status": "todo",
       "deps": [],
       "unlocks": [
@@ -129,7 +119,7 @@
     {
       "id": "J5",
       "type": "jen",
-      "category": "foundation",
+      "category": "listings",
       "status": "blocked",
       "deps": [
         "A2"
@@ -141,7 +131,7 @@
     {
       "id": "J6",
       "type": "jen",
-      "category": "foundation",
+      "category": "presence",
       "status": "todo",
       "deps": [],
       "unlocks": [
@@ -153,7 +143,7 @@
     {
       "id": "A3",
       "type": "ai",
-      "category": "foundation",
+      "category": "presence",
       "status": "blocked",
       "deps": [
         "J6"
@@ -165,7 +155,7 @@
     {
       "id": "J7",
       "type": "jen",
-      "category": "foundation",
+      "category": "presence",
       "status": "todo",
       "deps": [],
       "unlocks": [],
@@ -175,7 +165,7 @@
     {
       "id": "A4",
       "type": "ai",
-      "category": "foundation",
+      "category": "presence",
       "status": "todo",
       "deps": [],
       "unlocks": [
@@ -187,7 +177,7 @@
     {
       "id": "J8",
       "type": "jen",
-      "category": "foundation",
+      "category": "presence",
       "status": "blocked",
       "deps": [
         "A4"
@@ -199,7 +189,7 @@
     {
       "id": "J9",
       "type": "jen",
-      "category": "foundation",
+      "category": "presence",
       "status": "todo",
       "deps": [],
       "unlocks": [
@@ -211,7 +201,7 @@
     {
       "id": "A5",
       "type": "ai",
-      "category": "foundation",
+      "category": "presence",
       "status": "blocked",
       "deps": [
         "J9"
@@ -223,7 +213,7 @@
     {
       "id": "J10",
       "type": "jen",
-      "category": "foundation",
+      "category": "presence",
       "status": "todo",
       "deps": [],
       "unlocks": [
@@ -235,7 +225,7 @@
     {
       "id": "A6",
       "type": "ai",
-      "category": "foundation",
+      "category": "presence",
       "status": "blocked",
       "deps": [
         "J10"
@@ -247,7 +237,7 @@
     {
       "id": "J11",
       "type": "jen",
-      "category": "capture",
+      "category": "listings",
       "status": "todo",
       "deps": [],
       "unlocks": [
@@ -259,7 +249,7 @@
     {
       "id": "A7",
       "type": "ai",
-      "category": "capture",
+      "category": "listings",
       "status": "blocked",
       "deps": [
         "J11"
@@ -271,7 +261,7 @@
     {
       "id": "A8",
       "type": "ai",
-      "category": "capture",
+      "category": "listings",
       "status": "todo",
       "deps": [],
       "unlocks": [
@@ -283,7 +273,7 @@
     {
       "id": "J12",
       "type": "jen",
-      "category": "capture",
+      "category": "listings",
       "status": "blocked",
       "deps": [
         "A8"
@@ -295,7 +285,7 @@
     {
       "id": "J13",
       "type": "jen",
-      "category": "capture",
+      "category": "listings",
       "status": "todo",
       "deps": [],
       "unlocks": [
@@ -307,7 +297,7 @@
     {
       "id": "A9",
       "type": "ai",
-      "category": "capture",
+      "category": "listings",
       "status": "blocked",
       "deps": [
         "J13"
@@ -319,7 +309,7 @@
     {
       "id": "A10",
       "type": "ai",
-      "category": "capture",
+      "category": "listings",
       "status": "todo",
       "deps": [],
       "unlocks": [
@@ -331,7 +321,7 @@
     {
       "id": "J14",
       "type": "jen",
-      "category": "capture",
+      "category": "listings",
       "status": "blocked",
       "deps": [
         "A10"
@@ -345,7 +335,7 @@
     {
       "id": "A11",
       "type": "ai",
-      "category": "capture",
+      "category": "listings",
       "status": "blocked",
       "deps": [
         "J14"
@@ -357,7 +347,7 @@
     {
       "id": "J15",
       "type": "jen",
-      "category": "capture",
+      "category": "listings",
       "status": "todo",
       "deps": [],
       "unlocks": [
@@ -369,7 +359,7 @@
     {
       "id": "A12",
       "type": "ai",
-      "category": "capture",
+      "category": "listings",
       "status": "blocked",
       "deps": [
         "J15"
@@ -381,7 +371,7 @@
     {
       "id": "A13",
       "type": "ai",
-      "category": "jentime",
+      "category": "listings",
       "status": "todo",
       "deps": [],
       "unlocks": [
@@ -393,7 +383,7 @@
     {
       "id": "J16",
       "type": "jen",
-      "category": "jentime",
+      "category": "listings",
       "status": "blocked",
       "deps": [
         "A13"
@@ -405,7 +395,7 @@
     {
       "id": "A14",
       "type": "ai",
-      "category": "jentime",
+      "category": "listings",
       "status": "todo",
       "deps": [],
       "unlocks": [
@@ -417,7 +407,7 @@
     {
       "id": "J17",
       "type": "jen",
-      "category": "jentime",
+      "category": "listings",
       "status": "blocked",
       "deps": [
         "A14"
@@ -429,7 +419,7 @@
     {
       "id": "A15",
       "type": "ai",
-      "category": "jentime",
+      "category": "listings",
       "status": "todo",
       "deps": [],
       "unlocks": [
@@ -441,7 +431,7 @@
     {
       "id": "J18",
       "type": "jen",
-      "category": "jentime",
+      "category": "listings",
       "status": "blocked",
       "deps": [
         "A15"
@@ -453,7 +443,7 @@
     {
       "id": "A16",
       "type": "ai",
-      "category": "jentime",
+      "category": "listings",
       "status": "todo",
       "deps": [],
       "unlocks": [
@@ -465,7 +455,7 @@
     {
       "id": "J19",
       "type": "jen",
-      "category": "jentime",
+      "category": "listings",
       "status": "blocked",
       "deps": [
         "A16"
@@ -477,7 +467,7 @@
     {
       "id": "A17",
       "type": "ai",
-      "category": "jentime",
+      "category": "listings",
       "status": "todo",
       "deps": [],
       "unlocks": [],
@@ -487,7 +477,7 @@
     {
       "id": "A18",
       "type": "ai",
-      "category": "zillowcrm",
+      "category": "convert",
       "status": "todo",
       "deps": [],
       "unlocks": [
@@ -499,7 +489,7 @@
     {
       "id": "J20",
       "type": "jen",
-      "category": "zillowcrm",
+      "category": "convert",
       "status": "blocked",
       "deps": [
         "A18"
@@ -511,7 +501,7 @@
     {
       "id": "J21",
       "type": "jen",
-      "category": "zillowcrm",
+      "category": "convert",
       "status": "todo",
       "deps": [],
       "unlocks": [],
@@ -521,7 +511,7 @@
     {
       "id": "A19",
       "type": "ai",
-      "category": "zillowcrm",
+      "category": "convert",
       "status": "todo",
       "deps": [],
       "unlocks": [
@@ -533,7 +523,7 @@
     {
       "id": "J22",
       "type": "jen",
-      "category": "zillowcrm",
+      "category": "convert",
       "status": "blocked",
       "deps": [
         "A19"
@@ -545,7 +535,7 @@
     {
       "id": "A20",
       "type": "ai",
-      "category": "zillowcrm",
+      "category": "convert",
       "status": "todo",
       "deps": [],
       "unlocks": [
@@ -557,7 +547,7 @@
     {
       "id": "J23",
       "type": "jen",
-      "category": "zillowcrm",
+      "category": "convert",
       "status": "blocked",
       "deps": [
         "A20"
@@ -569,7 +559,7 @@
     {
       "id": "A21",
       "type": "ai",
-      "category": "playbook",
+      "category": "listings",
       "status": "todo",
       "deps": [],
       "unlocks": [
@@ -581,7 +571,7 @@
     {
       "id": "J24",
       "type": "jen",
-      "category": "playbook",
+      "category": "listings",
       "status": "blocked",
       "deps": [
         "A21"
@@ -593,7 +583,7 @@
     {
       "id": "A22",
       "type": "ai",
-      "category": "playbook",
+      "category": "listings",
       "status": "todo",
       "deps": [],
       "unlocks": [],
@@ -603,7 +593,7 @@
     {
       "id": "J25",
       "type": "jen",
-      "category": "playbook",
+      "category": "ops",
       "status": "todo",
       "deps": [],
       "unlocks": [],

@@ -10,5 +10,11 @@
     "taskId": "A1",
     "summary": "Connected to GitHub through Jen's Zapier and published the full board + website to racinel200/nook-listing-engine. One step left for the site to go live: Jen turns on GitHub Pages (task J2).",
     "link": "https://github.com/racinel200/nook-listing-engine"
+  },
+  {
+    "date": "2026-07-22T23:06:36Z",
+    "taskId": null,
+    "summary": "Board restructured around Jen's 4 goals: Goal 1 Win Seller Listings (25 tasks), Goal 2 One Online Presence (9), Goal 3 Convert Leads & Zillow Score (7), Goal 4 Tools & Systems (6). Same tasks, same deps — only the grouping changed.",
+    "link": null
   }
 ]
