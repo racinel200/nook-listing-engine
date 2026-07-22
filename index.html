@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Nook Listing Engine — Task Board</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --hairline: #e1e0d9;
+    --baseline: #c3c2b7;
+    --ring: rgba(11,11,11,0.10);
+    --accent: #2a78d6;      /* meter fill / AI identity */
+    --jen: #eb6834;         /* Jen identity */
+    --good: #0ca30c;        /* status: done */
+    --warn: #fab219;        /* status: needs Jen (icon+label always) */
+    --good-text: #006300;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --hairline: #2c2c2a;
+    --baseline: #383835;
+    --ring: rgba(255,255,255,0.10);
+    --accent: #3987e5;
+    --jen: #d95926;
+    --good: #0ca30c;
+    --warn: #fab219;
+    --good-text: #0ca30c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --muted: #898781;
+      --hairline: #2c2c2a;
+      --baseline: #383835;
+      --ring: rgba(255,255,255,0.10);
+      --accent: #3987e5;
+      --jen: #d95926;
+      --good: #0ca30c;
+      --warn: #fab219;
+      --good-text: #0ca30c;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.45;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 28px 18px 80px; }
+  header.top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+  h1 { font-size: 22px; letter-spacing: -0.02em; }
+  .sub { color: var(--ink-2); margin-top: 2px; }
+  .meta-line { color: var(--muted); font-size: 12.5px; margin-top: 6px; }
+  #themeBtn {
+    background: none; border: 1px solid var(--hairline); border-radius: 8px;
+    color: var(--ink-2); cursor: pointer; font-size: 13px; padding: 6px 10px;
+  }
+  /* stat tiles */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 18px 0 8px; }
+  .tile {
+    background: var(--surface); border: 1px solid var(--ring); border-radius: 12px;
+    padding: 12px 14px;
+  }
+  .tile .num { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; }
+  .tile .lbl { color: var(--ink-2); font-size: 12.5px; margin-top: 2px; }
+  /* filters */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 22px; }
+  .chip {
+    background: var(--surface); border: 1px solid var(--hairline); border-radius: 999px;
+    color: var(--ink-2); cursor: pointer; font-size: 13px; padding: 5px 12px;
+  }
+  .chip[aria-pressed="true"] { border-color: var(--ink); color: var(--ink); font-weight: 600; }
+  /* category sections */
+  section.cat { margin-bottom: 26px; }
+  .cat-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+  .cat-head h2 { font-size: 16px; }
+  .cat-head .plan { color: var(--muted); font-size: 12px; }
+  .meter-row { display: flex; align-items: center; gap: 10px; margin: 4px 0 10px; }
+  .meter { flex: 1; height: 8px; background: var(--hairline); border-radius: 4px; overflow: hidden; }
+  .meter > div { height: 100%; background: var(--accent); border-radius: 4px; }
+  .meter-lbl { color: var(--ink-2); font-size: 12.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  /* task cards */
+  .task {
+    background: var(--surface); border: 1px solid var(--ring); border-radius: 12px;
+    padding: 10px 14px; margin-bottom: 8px;
+  }
+  .task.done { opacity: 0.62; }
+  .t-row { display: flex; align-items: center; gap: 10px; }
+  .badge {
+    border-radius: 999px; font-size: 11px; font-weight: 650; letter-spacing: 0.04em;
+    padding: 2px 8px; border: 1px solid var(--hairline); color: var(--ink-2);
+    display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0;
+  }
+  .badge .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  .badge.jen .dot { background: var(--jen); }
+  .badge.ai .dot { background: var(--accent); }
+  .t-title { flex: 1; font-weight: 550; }
+  .t-title .tid { color: var(--muted); font-weight: 400; font-size: 12px; margin-right: 6px; }
+  .status { font-size: 12.5px; white-space: nowrap; flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px; }
+  .status.done { color: var(--good-text); font-weight: 600; }
+  .status.waiting { color: var(--muted); }
+  .status.ready-jen { color: var(--ink); font-weight: 600; }
+  .status.ready-ai { color: var(--ink-2); }
+  .warn-dot { color: var(--warn); }
+  .markbtn {
+    background: none; border: 1px solid var(--baseline); border-radius: 8px;
+    color: var(--ink); cursor: pointer; font-size: 12.5px; font-weight: 600;
+    padding: 4px 10px; flex-shrink: 0;
+  }
+  .markbtn:hover { border-color: var(--ink); }
+  details.t-detail { margin-top: 6px; }
+  details.t-detail summary { color: var(--muted); cursor: pointer; font-size: 12.5px; list-style: none; }
+  details.t-detail summary::before { content: "▸ "; }
+  details.t-detail[open] summary::before { content: "▾ "; }
+  details.t-detail p { color: var(--ink-2); font-size: 13.5px; margin-top: 6px; }
+  .dep-note { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .result-note { color: var(--ink-2); font-size: 12.5px; margin-top: 4px; }
+  .result-note a { color: var(--accent); }
+  .tellclaude { display: none; color: var(--ink-2); font-size: 12.5px; margin-top: 6px; border-top: 1px dashed var(--hairline); padding-top: 6px; }
+  /* activity */
+  #activity h2 { font-size: 16px; margin-bottom: 10px; }
+  .act {
+    border-left: 2px solid var(--hairline); padding: 0 0 16px 14px; margin-left: 4px; position: relative;
+  }
+  .act::before {
+    content: ""; position: absolute; left: -5px; top: 4px; width: 8px; height: 8px;
+    border-radius: 50%; background: var(--accent);
+  }
+  .act .when { color: var(--muted); font-size: 12px; }
+  .act .what { color: var(--ink-2); font-size: 13.5px; margin-top: 2px; }
+  .act .what a { color: var(--accent); }
+  footer { color: var(--muted); font-size: 12px; margin-top: 34px; border-top: 1px solid var(--hairline); padding-top: 12px; }
+  .empty { color: var(--muted); font-size: 13px; padding: 6px 0 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1 id="title">Nook Listing Engine</h1>
+      <div class="sub" id="subtitle"></div>
+      <div class="meta-line" id="metaline"></div>
+    </div>
+    <button id="themeBtn" aria-label="Toggle dark mode">◐ Theme</button>
+  </header>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="chips" id="chips" role="group" aria-label="Filter tasks"></div>
+
+  <main id="board"></main>
+
+  <section id="activity">
+    <h2>What the AI has done</h2>
+    <div id="actlist"></div>
+  </section>
+
+  <footer id="foot"></footer>
+</div>
+
+<script id="data-tasks" type="application/json">
+{}
+</script>
+<script id="data-activity" type="application/json">
+[]
+</script>
+
+<script>
+(async function () {
+  var DATA = {}, ACTS = [];
+  try { DATA = JSON.parse(document.getElementById('data-tasks').textContent || '{}'); } catch (e) {}
+  try { ACTS = JSON.parse(document.getElementById('data-activity').textContent || '[]'); } catch (e) {}
+  if (!DATA.tasks) {
+    try {
+      DATA = await (await fetch('tasks.json', { cache: 'no-store' })).json();
+      ACTS = await (await fetch('activity.json', { cache: 'no-store' })).json();
+    } catch (e) {}
+  }
+  if (!DATA.tasks) { document.getElementById('board').innerHTML = '<p class="empty">Board data missing.</p>'; return; }
+
+  var byId = {};
+  DATA.tasks.forEach(function (t) { byId[t.id] = t; });
+
+  function isDone(t) { return t.status === 'done'; }
+  function depsMet(t) { return (t.deps || []).every(function (d) { return byId[d] && isDone(byId[d]); }); }
+  function isReady(t) { return !isDone(t) && depsMet(t); }
+  function depNames(t) {
+    return (t.deps || []).filter(function (d) { return byId[d] && !isDone(byId[d]); })
+      .map(function (d) { return d + ' — ' + byId[d].title; });
+  }
+
+  /* header */
+  document.getElementById('title').textContent = DATA.meta.title || 'Task Board';
+  document.getElementById('subtitle').textContent = DATA.meta.subtitle || '';
+  var upd = DATA.meta.updated ? new Date(DATA.meta.updated) : null;
+  var updStr = upd ? upd.toLocaleString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) + ' CT' : '';
+  document.getElementById('metaline').textContent = (DATA.meta.worker ? DATA.meta.worker + ' · ' : '') + (updStr ? 'Updated ' + updStr : '');
+
+  /* tiles */
+  var jenReady = DATA.tasks.filter(function (t) { return t.type === 'jen' && isReady(t); }).length;
+  var aiReady = DATA.tasks.filter(function (t) { return t.type === 'ai' && isReady(t); }).length;
+  var waiting = DATA.tasks.filter(function (t) { return !isDone(t) && !depsMet(t); }).length;
+  var done = DATA.tasks.filter(isDone).length;
+  var tiles = [
+    { n: jenReady, l: 'For Jen right now' },
+    { n: aiReady, l: 'Queued for the AI' },
+    { n: waiting, l: 'Waiting on something' },
+    { n: done, l: 'Done (' + DATA.tasks.length + ' total)' }
+  ];
+  document.getElementById('tiles').innerHTML = tiles.map(function (x) {
+    return '<div class="tile"><div class="num">' + x.n + '</div><div class="lbl">' + x.l + '</div></div>';
+  }).join('');
+
+  /* filters */
+  var FILTERS = [
+    { id: 'all', l: 'All' },
+    { id: 'jen', l: "Jen's list" },
+    { id: 'ai', l: 'AI queue' },
+    { id: 'ready', l: 'Ready now' },
+    { id: 'done', l: 'Done' }
+  ];
+  var active = 'all';
+  function chipHtml() {
+    return FILTERS.map(function (f) {
+      return '<button class="chip" data-f="' + f.id + '" aria-pressed="' + (active === f.id) + '">' + f.l + '</button>';
+    }).join('');
+  }
+  var chipsEl = document.getElementById('chips');
+  chipsEl.innerHTML = chipHtml();
+  chipsEl.addEventListener('click', function (e) {
+    var b = e.target.closest('.chip'); if (!b) return;
+    active = b.getAttribute('data-f');
+    chipsEl.innerHTML = chipHtml();
+    render();
+  });
+
+  function visible(t) {
+    if (active === 'jen') return t.type === 'jen' && !isDone(t);
+    if (active === 'ai') return t.type === 'ai' && !isDone(t);
+    if (active === 'ready') return isReady(t);
+    if (active === 'done') return isDone(t);
+    return true;
+  }
+
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+
+  function markUrl(t) {
+    if (!DATA.meta.repo) return null;
+    var title = encodeURIComponent('DONE: ' + t.id);
+    var body = encodeURIComponent('Marking complete: ' + t.id + ' — ' + t.title + '\n\n(Submitted from the board. The worker will fold this in on its next run.)');
+    return 'https://github.com/' + DATA.meta.repo + '/issues/new?title=' + title + '&body=' + body;
+  }
+
+  function taskHtml(t) {
+    var ready = isReady(t), doneT = isDone(t);
+    var status;
+    if (doneT) status = '<span class="status done">✓ Done</span>';
+    else if (!depsMet(t)) status = '<span class="status waiting">🔒 Waiting</span>';
+    else if (t.type === 'jen') status = '<span class="status ready-jen"><span class="warn-dot">●</span> Your move</span>';
+    else status = '<span class="status ready-ai">Queued for AI</span>';
+
+    var btn = '';
+    if (t.type === 'jen' && ready) {
+      var u = markUrl(t);
+      btn = u
+        ? '<a class="markbtn" href="' + u + '" target="_blank" rel="noopener">Mark done ✓</a>'
+        : '<button class="markbtn" data-tell="' + t.id + '">Mark done ✓</button>';
+    }
+
+    var badge = '<span class="badge ' + t.type + '"><span class="dot"></span>' + (t.type === 'jen' ? 'JEN' : 'AI') + '</span>';
+    var deps = depNames(t);
+    var depLine = (!doneT && deps.length)
+      ? '<div class="dep-note">Waiting on: ' + deps.map(esc).join(' · ') + '</div>' : '';
+    var unlocksLine = (!doneT && (t.unlocks || []).length)
+      ? '<div class="dep-note">Completing this unlocks: ' + t.unlocks.join(', ') + '</div>' : '';
+    var result = t.result
+      ? '<div class="result-note">→ ' + t.result + '</div>' : '';
+    var tell = (t.type === 'jen' && ready && !DATA.meta.repo)
+      ? '<div class="tellclaude" id="tell-' + t.id + '">Until the site is connected to GitHub, just tell Claude: “mark ' + t.id + ' done”.</div>' : '';
+
+    return '<div class="task' + (doneT ? ' done' : '') + '">' +
+      '<div class="t-row">' + badge +
+      '<span class="t-title"><span class="tid">' + t.id + '</span>' + esc(t.title) + '</span>' +
+      status + btn + '</div>' +
+      '<details class="t-detail"><summary>details</summary><p>' + esc(t.detail) + '</p>' + unlocksLine + '</details>' +
+      depLine + result + tell +
+      '</div>';
+  }
+
+  function render() {
+    var html = '';
+    DATA.categories.forEach(function (c) {
+      var ts = DATA.tasks.filter(function (t) { return t.category === c.id && visible(t); });
+      var all = DATA.tasks.filter(function (t) { return t.category === c.id; });
+      var d = all.filter(isDone).length;
+      if (!ts.length && active !== 'all') return;
+      var pct = all.length ? Math.round(100 * d / all.length) : 0;
+      html += '<section class="cat">' +
+        '<div class="cat-head"><h2>' + esc(c.name) + '</h2><span class="plan">' + esc(c.plan) + '</span></div>' +
+        '<div class="meter-row"><div class="meter" role="img" aria-label="' + d + ' of ' + all.length + ' done"><div style="width:' + pct + '%"></div></div>' +
+        '<span class="meter-lbl">' + d + '/' + all.length + ' done</span></div>' +
+        (ts.length ? ts.map(taskHtml).join('') : '<p class="empty">Nothing here under this filter.</p>') +
+        '</section>';
+    });
+    document.getElementById('board').innerHTML = html;
+    document.querySelectorAll('[data-tell]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var el = document.getElementById('tell-' + b.getAttribute('data-tell'));
+        if (el) el.style.display = el.style.display === 'block' ? 'none' : 'block';
+      });
+    });
+  }
+  render();
+
+  /* activity */
+  var actEl = document.getElementById('actlist');
+  if (!ACTS.length) actEl.innerHTML = '<p class="empty">No worker runs yet.</p>';
+  else actEl.innerHTML = ACTS.slice().reverse().map(function (a) {
+    var when = a.date ? new Date(a.date).toLocaleString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) + ' CT' : '';
+    var link = a.link ? ' <a href="' + a.link + '" target="_blank" rel="noopener">view</a>' : '';
+    return '<div class="act"><div class="when">' + when + (a.taskId ? ' · ' + a.taskId : '') + '</div><div class="what">' + esc(a.summary) + link + '</div></div>';
+  }).join('');
+
+  document.getElementById('foot').textContent =
+    'Two kinds of tasks: JEN (you do it, mark it done) and AI (the worker picks it up automatically once unblocked). ' +
+    'The worker runs hourly and exits quietly when nothing is actionable. Approvals always come to you before anything sends or spends.';
+
+  /* theme toggle */
+  document.getElementById('themeBtn').addEventListener('click', function () {
+    var r = document.documentElement;
+    var cur = r.getAttribute('data-theme');
+    var dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var next = cur ? (cur === 'dark' ? 'light' : 'dark') : (dark ? 'light' : 'dark');
+    r.setAttribute('data-theme', next);
+  });
+})();
+</script>
+</body>
+</html>
