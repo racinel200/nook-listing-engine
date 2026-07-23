@@ -74,6 +74,14 @@
   .chip.ai{background:var(--blue-bg);color:var(--blue)}
   .askclaude{display:inline-block;color:#b0602f;background:#faf3ec;border:1px solid #ecd9c8;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;text-decoration:none;margin-left:2px}
   .askclaude:hover{background:#b0602f;color:#fff;border-color:#b0602f}
+  .explainbtn{display:inline-block;font-family:inherit;color:#4a6a86;background:#eef3f8;border:1px solid #d5e0ea;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;margin-left:2px}
+  .explainbtn:hover{background:#4a6a86;color:#fff;border-color:#4a6a86}
+  .exmodal{max-width:540px;max-height:82vh;overflow-y:auto}
+  .modal.exmodal .exid{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
+  .modal.exmodal h2{margin-bottom:12px;text-transform:none;letter-spacing:0;font-size:18px;color:var(--ink)}
+  .modal.exmodal p{font-size:14.5px;line-height:1.65;color:#4c4642;margin-bottom:12px}
+  .modal.exmodal p b{color:var(--nook-d)}
+  .modal.exmodal .actions{margin-top:8px}
   .task .undo{margin-left:auto;font-size:12px;color:var(--muted);border:none;background:none;cursor:pointer;font-family:inherit;text-decoration:underline;flex-shrink:0}
   .action{display:flex;gap:12px;padding:12px 6px;border-bottom:1px solid var(--line)}
   .action:last-child{border-bottom:none}
@@ -168,6 +176,7 @@
     <footer id="footer">
       Two kinds of tasks: <b>JEN</b> (you do it &mdash; tap the circle when done) and <b>AI</b> (the worker picks it up automatically once unblocked).
       Finishing a Jen task often unlocks new AI work. The worker runs hourly and never sends, publishes, or spends without your approval.
+      Not sure why a task is on the list? Tap <b>Explain this</b> on any card for the why and the how.
     </footer>
   </div>
 </div>
@@ -198,6 +207,18 @@
   </div>
 </div>
 
+<div class="overlay" id="exOverlay">
+  <div class="modal exmodal">
+    <div class="exid" id="exId"></div>
+    <h2 id="exTitle"></h2>
+    <div id="exBody"></div>
+    <div class="actions">
+      <a class="askclaude" id="exClaude" target="_blank" rel="noopener" style="display:none">Do it with Claude</a>
+      <button class="send" id="exClose">Got it</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -210,6 +231,7 @@ var SHORT={listings:'Listings',presence:'Presence',convert:'Convert',ops:'System
 var PRIO_LABEL={1:'Do first',2:'This week',3:'When you can'};
 var CONFIG={apiUrl:'',projectId:'',contextTemplate:''};
 var DATA={tasks:[],activity:[],notes:[]};
+var EXPLAINS={}; /* task id -> "Why: ...\n\nHow: ..." — from explains.json (repo) or an `explain` column in the sheet */
 var TAB='todo', CAT='listings';
 
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -290,6 +312,7 @@ function taskHtml(t,mode){
   var cls='task'+(isDone(t)?' done':'')+(t.priority==='1'?' p1':'')+(mode==='waiting'?(onClaude?' waiting onclaude':' waiting'):'');
   var chips='<span class="chip '+(t.type==='ai'?'ai':'jen')+'">'+(t.type==='ai'?'AI':'JEN')+'</span>'+esc(t.id);
   var ask=(!isDone(t)&&t.type==='jen')?' <a class="askclaude" target="_blank" rel="noopener" href="'+escA(claudeUrl(t))+'">Do it with Claude</a>':'';
+  var expl=' <button class="explainbtn" data-explain="'+escA(t.id)+'">Explain this</button>';
   var wait='';
   if(mode==='waiting'){
     wait=onClaude
@@ -301,7 +324,7 @@ function taskHtml(t,mode){
   var box=(mode==='waiting'||isDone(t))?'<span class="box"></span>':'<button class="box" data-done="'+escA(t.id)+'" title="Mark done"></button>';
   return '<div class="'+cls+'">'+box
     +'<div class="body"><div class="txt" data-open="'+escA(t.id)+'">'+esc(t.title)+'</div>'
-    +'<div class="meta">'+chips+ask+'</div>'+wait+res
+    +'<div class="meta">'+chips+expl+ask+'</div>'+wait+res
     +(t.detail?'<div class="detail">'+esc(t.detail)+'</div>':'')
     +'</div>'+undo+'</div>';
 }
@@ -378,8 +401,38 @@ function drawNotes(){
   }).join('');
 }
 
+/* ---------- explain popup ---------- */
+function explainText(t){
+  var s=(t.explain&&String(t.explain).trim())||EXPLAINS[t.id]||'';
+  return String(s).trim();
+}
+function openExplain(id){
+  var t=byId(id);if(!t)return;
+  document.getElementById('exId').textContent=t.id+' · '+(t.type==='ai'?'AI task':'Jen task')+' · '+(CATS[t.category]||t.category);
+  document.getElementById('exTitle').textContent=t.title;
+  var body=document.getElementById('exBody');
+  var s=explainText(t);
+  if(s){
+    body.innerHTML=s.split(/\n\s*\n/).map(function(p){
+      return '<p>'+esc(p).replace(/^(Why|How):/,'<b>$1:</b>').replace(/\n/g,'<br>')+'</p>';
+    }).join('');
+  } else {
+    body.innerHTML='<p>No written explanation for this one yet '
+      +(t.detail?'— the short version: '+esc(t.detail):'')
+      +'</p><p>Ask Claude in any chat to “explain task '+esc(t.id)+'” and it’ll write one onto the board.</p>';
+  }
+  var a=document.getElementById('exClaude');
+  if(!isDone(t)&&t.type==='jen'){a.href=claudeUrl(t);a.style.display='inline-block';}
+  else a.style.display='none';
+  document.getElementById('exOverlay').classList.add('show');
+}
+document.getElementById('exClose').addEventListener('click',function(){document.getElementById('exOverlay').classList.remove('show');});
+document.getElementById('exOverlay').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
+
 /* ---------- events (delegated) ---------- */
 document.getElementById('tabbody').addEventListener('click',function(e){
+  var x=e.target.closest('[data-explain]');
+  if(x){openExplain(x.getAttribute('data-explain'));return;}
   var d=e.target.closest('[data-done]');
   if(d){markDone(d.getAttribute('data-done'));return;}
   var u=e.target.closest('[data-undo]');
@@ -480,12 +533,14 @@ function loadData(first){
     fetchRows('Config').catch(function(){return [];}),
     fetchTab('Tasks','id'),
     fetchTab('Activity','summary').catch(function(){return [];}),
-    fetchTab('Notes','note').catch(function(){return [];})
+    fetchTab('Notes','note').catch(function(){return [];}),
+    fetch('explains.json').then(function(r){return r.ok?r.json():{};}).catch(function(){return {};})
   ]).then(function(res){
     res[0].forEach(function(r){var k=String(r[0]||'').trim(),v=String(r[1]||'').trim();if(k&&CONFIG.hasOwnProperty(k))CONFIG[k]=v;});
     DATA.tasks=res[1];
     DATA.activity=res[2];
     DATA.notes=res[3];
+    EXPLAINS=res[4]||{};
     lastLoad=Date.now();
     if(first){
       /* open on the goal with the most tasks ready for Jen */
