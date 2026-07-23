@@ -164,6 +164,10 @@
   .note{padding:10px 6px;border-bottom:1px solid var(--line);font-size:14px}
   .note:last-child{border-bottom:none}
   .note .meta{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .note .notetext{display:block}
+  .note.processed .notetext{text-decoration:line-through;color:var(--muted)}
+  .note .meta .notetask{color:var(--nook-d);font-weight:600}
+  .note .meta .notetask.general{color:var(--muted);font-weight:normal;font-style:italic}
   #status{text-align:center;padding:30px;color:var(--muted)}
   #status.error{color:var(--nook)}
   #status .steps{display:inline-block;text-align:left;background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin-top:14px;font-size:14px;line-height:1.8;color:var(--ink)}
@@ -603,9 +607,26 @@ function draw(){
 
 function drawNotes(){
   var el=document.getElementById('notes');
-  var ns=DATA.notes.filter(function(n){return n.by!=='automation';}).slice(-5).reverse();
+  /* newest first; for task-tagged notes keep only the latest per task so an
+     edited note doesn't show its old copy beside the new one */
+  var all=DATA.notes.filter(function(n){return n.by!=='automation';});
+  var seen={},ns=[];
+  for(var i=all.length-1;i>=0&&ns.length<5;i--){var n=all[i];var tid=String(n.taskid||'').trim();
+    if(tid){if(seen[tid])continue;seen[tid]=1;}
+    ns.push(n);
+  }
   el.innerHTML=ns.map(function(n){
-    return '<div class="note">'+esc(n.note)+'<div class="meta">'+fmtDT(n.date)+' &middot; '+esc(n.by||'jen')+(n.status==='new'?' &middot; waiting for the worker':'')+'</div></div>';
+    var st=String(n.status||'').trim().toLowerCase();
+    var processed=st==='read';
+    var tid=String(n.taskid||'').trim();
+    var t=tid?byId(tid):null;
+    var tag=tid?('<span class="notetask">'+esc(tid)+(t?' &middot; '+esc(t.title):'')+'</span>')
+               :'<span class="notetask general">General</span>';
+    var label=processed?'read by Claude':(st==='new'?'waiting for the worker':esc(n.status||''));
+    return '<div class="note'+(processed?' processed':'')+'">'
+      +'<span class="notetext">'+esc(n.note)+'</span>'
+      +'<div class="meta">'+tag+' &middot; '+fmtDT(n.date)+' &middot; '+esc(n.by||'jen')+' &middot; '+label+'</div>'
+      +'</div>';
   }).join('');
 }
 
