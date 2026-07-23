@@ -20,7 +20,9 @@
   body{font-family:'Georgia','Times New Roman',serif;background:var(--cream);color:var(--ink);-webkit-tap-highlight-color:transparent;
     padding:calc(32px + env(safe-area-inset-top,0px)) calc(20px + env(safe-area-inset-right,0px)) calc(32px + env(safe-area-inset-bottom,0px)) calc(20px + env(safe-area-inset-left,0px))}
   .wrap{max-width:720px;margin:0 auto}
-  /* v2.13 One-Touch Correspondence panel (Correspondence tab, Apps Script v12)
+  /* v2.14 One-Touch moved to Jen's PRIVATE page (served by the queue sheet's
+     Apps Script, Google-login gated) — the public panel is gone; a "✉ One-Touch"
+     quick-link appears when the board Config has an otcUiUrl row
      v2.12 mobile: Listing Leads stack ABOVE the board (≤940px)
      v2.11 seller-proposal button on lead cards (package column or packages.json → Drive folder)
      v2.10 two-column desktop: board left, Listing Leads right; stacks on mobile */
@@ -158,20 +160,6 @@
   .leadwt.queued:hover{background:#f1ecfa;color:#5b3e8f;border-color:#d4c8ea}
   .leaddismiss:hover{color:var(--nook-d);border-color:#eecdd4;background:#fbf1f3}
   .leaddismiss.armed{background:var(--nook);border-color:var(--nook);color:#fff}
-  /* v2.13 One-Touch Correspondence */
-  #corrPanel{max-width:720px;margin-left:auto;margin-right:auto}
-  .chip.ch-email{background:#eef3f8;color:#4a6a86}
-  .chip.ch-sms{background:#f1ecfa;color:#5b3e8f}
-  .corrpills{margin:2px 0 6px;text-align:center}
-  .corrpills button{font-family:inherit;background:#f6f2ea;border:1px solid #e8e1d3;color:var(--muted);border-radius:14px;padding:5px 14px;font-size:12.5px;margin:3px 2px;cursor:pointer;text-transform:capitalize}
-  .corrpills button.active{background:var(--ink);border-color:var(--ink);color:#fff}
-  .corrqueue{font-size:12.5px;color:#a1802f;margin-top:5px}
-  .corrsent{font-size:12.5px;color:var(--sage);margin-top:5px}
-  .corrfail{font-size:12.5px;color:var(--nook);margin-top:5px}
-  .corrsend{display:inline-block;font-family:inherit;color:#2e5c38;background:#e9f2ea;border:1px solid #b7d3bc;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;text-decoration:none;cursor:pointer}
-  .corrsend:hover{background:var(--sage);color:#fff;border-color:var(--sage)}
-  .task .subj{font-size:13px;color:#5c554f;margin-top:2px}
-  .task .subj b{color:var(--nook-d);font-weight:normal}
   .lead .detail{display:none;font-size:13.5px;color:#5c554f;line-height:1.55;margin-top:7px;background:#fdfcf9;border:1px solid #efe9dd;border-radius:10px;padding:10px 12px}
   .lead.open .detail{display:block}
   .lead .detail b{color:var(--nook-d);font-weight:normal;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;display:block;margin:8px 0 2px}
@@ -230,8 +218,7 @@
     .task .blockrow{gap:8px;margin-top:9px}
     .blockedby{padding:9px 15px;font-size:12.5px;border-radius:20px}
     .lead .meta{gap:8px;margin-top:9px}
-    .leadcall,.lead .linkchip,.leaddismiss,.leadpkg,.leadfub,.leadwt,.corrsend{padding:9px 15px;font-size:12.5px;border-radius:20px}
-    .corrpills button{padding:9px 18px;font-size:13.5px;border-radius:20px;margin:4px 3px}
+    .leadcall,.lead .linkchip,.leaddismiss,.leadpkg,.leadfub,.leadwt{padding:9px 15px;font-size:12.5px;border-radius:20px}
     .task .undo{font-size:13px;padding:6px 4px}
   }
 </style>
@@ -278,19 +265,6 @@
     </div>
     </div>
 
-    <div class="panel" id="corrPanel" style="display:none">
-      <h2>One-Touch Correspondence</h2>
-      <p class="leadsub">Outreach your AI drafted and finished for you. Read it, tap the circle to approve &mdash; <b>emails send automatically within the hour</b> from your Gmail (and get logged in Follow Up Boss); texts send from your phone with one tap.</p>
-      <div class="corrpills" id="corrPills"></div>
-      <div class="subtabs" id="corrTabs">
-        <button data-ctab="review" class="active">To Approve<span class="count" id="n-corr"></span></button>
-        <button data-ctab="approved">Approved</button>
-        <button data-ctab="drafts">Claude&rsquo;s Drafts</button>
-      </div>
-      <div id="corrlist"></div>
-      <div class="sumline" id="corrsum"></div>
-    </div>
-
     <div class="panel" id="notePanel">
       <h2>Leave a note for your AI worker</h2>
       <textarea id="notebox" placeholder="Anything on your mind &mdash; answer a question, redirect a task, share news. The worker reads it on its next hourly run."></textarea>
@@ -306,7 +280,7 @@
       A task that&rsquo;s waiting shows a <b>&#128274; Blocked by</b> button &mdash; tap it to jump to the task that has to finish first. The worker runs hourly and never sends, publishes, or spends without your approval.
       Not sure why a task is on the list? Tap <b>Explain this</b> on any card for the why and the how.
       A green <b>Automation solution proposed</b> button means your automation scout found a shortcut &mdash; tap it for a ready-made prompt, call, text, or email.
-      In <b>One-Touch Correspondence</b>, tapping the circle is your approval: the hourly sender emails it from your Gmail and logs it in Follow Up Boss; nothing ever sends without that tap.
+      <b>&#9993; One-Touch</b> (in the quick links) opens your private correspondence page &mdash; only your Google account can see it; tapping a circle there is your approval to send.
     </footer>
   </div>
 </div>
@@ -382,10 +356,9 @@ var KEY='nook-board-2026';
 var CATS={listings:'Goal 1 · Win Listings',presence:'Goal 2 · Online Presence',convert:'Goal 3 · Convert & Score',ops:'Goal 4 · Tools & Systems'};
 var SHORT={listings:'Listings',presence:'Presence',convert:'Convert',ops:'Systems'};
 var PRIO_LABEL={1:'Do first',2:'This week',3:'When you can'};
-var CONFIG={apiUrl:'',projectId:'',contextTemplate:''};
-var DATA={tasks:[],activity:[],notes:[],leads:[],corr:[]};
+var CONFIG={apiUrl:'',projectId:'',contextTemplate:'',otcUiUrl:''};
+var DATA={tasks:[],activity:[],notes:[],leads:[]};
 var TAB='todo', CAT='listings';
-var CTAB='review', CFILTER='all';
 
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function escA(s){return esc(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -779,155 +752,6 @@ document.getElementById('leadlist').addEventListener('click',function(e){
   if(o){o.closest('.lead').classList.toggle('open');}
 });
 
-/* ---------- One-Touch Correspondence (Correspondence tab, Apps Script v12) ----------
-   The AI drafts outreach into the sheet's Correspondence tab. status flow:
-   draft (worker still writing) → ready (finished — shows under To Approve) →
-   approved (Jen's tap = her yes; the hourly sender emails it from her Gmail
-   and logs it in FUB) → sent. SMS items send from Jen's phone via the Send
-   Text button (marked sent on tap). Bodies use first names only; recipient
-   email addresses are never on the sheet — the sender resolves them from FUB. */
-function corrById(id){for(var i=0;i<DATA.corr.length;i++)if(DATA.corr[i].id===id)return DATA.corr[i];return null;}
-function corrVisible(){
-  return DATA.corr.filter(function(c){
-    if(c.status==='dismissed')return false;
-    if(CFILTER!=='all'&&String(c.leadtype||'other').toLowerCase()!==CFILTER)return false;
-    return true;
-  });
-}
-function corrHtml(c){
-  var st=c.status, isEmail=(c.channel||'email')==='email';
-  var cls='task'+((st==='approved'||st==='sent')?' done':'')+(st==='failed'?' p1':'');
-  var chips='<span class="chip '+(isEmail?'ch-email':'ch-sms')+'">'+(isEmail?'&#9993; Email':'&#128172; Text')+'</span>'
-    +(c.leadtype?'<span class="chip">'+esc(c.leadtype)+'</span>':'');
-  var fub=String(c.fub||'').trim();
-  var fubChip=/^https?:\/\//.test(fub)?' <a class="leadfub" href="'+escA(fub)+'" target="_blank" rel="noopener">FUB &#8599;</a>':'';
-  var title=(c.name?esc(c.name)+' &mdash; ':'')+(isEmail?esc(c.subject||''):esc(String(c.body||'').slice(0,70)+(String(c.body||'').length>70?'&hellip;':'')));
-  var subj=isEmail&&c.name?'<div class="subj">To <b>'+esc(c.name)+'</b> &middot; '+esc(c.subject||'')+'</div>':'';
-  var detail='<div class="detail">'+(isEmail?'<b style="color:var(--nook-d);font-weight:normal;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:2px">Subject: '+esc(c.subject||'')+'</b>':'')+rich(c.body||'').replace(/\n/g,'<br>')+'</div>';
-  var box, statusLine='', actions='';
-  if(st==='ready'){
-    box='<button class="box" data-capprove="'+escA(c.id)+'" title="Approve — sends within the hour"></button>';
-    actions=' <button class="leaddismiss" data-cdismiss="'+escA(c.id)+'">&#10005; Don&rsquo;t send</button>';
-  } else if(st==='approved'){
-    box='<span class="box"></span>';
-    if(isEmail) statusLine='<div class="corrqueue">&#9203; Approved &mdash; sends within the hour from your Gmail.</div>';
-    else {
-      var num=String(c.phone||'').replace(/[^+\d]/g,'');
-      statusLine='<div class="corrqueue">&#9203; Approved &mdash; tap Send Text to send it from your phone.</div>';
-      actions=' <a class="corrsend" data-csms="'+escA(c.id)+'" href="sms:'+escA(num)+'?&body='+encodeURIComponent(c.body||'')+'">&#128172; Send Text</a>';
-    }
-  } else if(st==='sent'){
-    box='<span class="box"></span>';
-    statusLine='<div class="corrsent">&#10003; Sent'+(c.sent?' '+fmtDT(c.sent):'')+(isEmail?' &middot; logged in FUB':'')+'</div>';
-  } else if(st==='failed'){
-    box='<span class="box"></span>';
-    statusLine='<div class="corrfail">&#9888; Send failed'+(c.result?' &mdash; '+esc(c.result):'')+' &mdash; the worker will flag it.</div>';
-  } else { /* draft */
-    box='<span class="box"></span>';
-    statusLine='<div class="corrqueue" style="color:var(--blue)">&#9998; Claude is still working on this one.</div>';
-  }
-  var undo=(st==='approved'&&TABC()==='approved')?'<button class="undo" data-cundo="'+escA(c.id)+'">undo</button>':'';
-  return '<div class="'+cls+'" data-cid="'+escA(c.id)+'">'+box
-    +'<div class="body"><div class="txt" data-copen="'+escA(c.id)+'">'+title+'</div>'
-    +subj
-    +'<div class="meta">'+chips+fubChip+actions+'</div>'
-    +statusLine+detail
-    +'</div>'+undo+'</div>';
-}
-function TABC(){return CTAB;}
-function drawCorr(){
-  var panel=document.getElementById('corrPanel');
-  if(!DATA.corr.length){panel.style.display='none';return;}
-  panel.style.display='block';
-  /* lead-type filter pills, built from whatever types exist right now */
-  var types={};
-  DATA.corr.forEach(function(c){if(c.status!=='dismissed')types[String(c.leadtype||'other').toLowerCase()]=1;});
-  var tkeys=Object.keys(types).sort();
-  if(CFILTER!=='all'&&!types[CFILTER])CFILTER='all';
-  document.getElementById('corrPills').innerHTML=(tkeys.length>1?
-    ['all'].concat(tkeys).map(function(k){
-      return '<button data-cf="'+escA(k)+'"'+(CFILTER===k?' class="active"':'')+'>'+esc(k)+'</button>';
-    }).join(''):'');
-  var vis=corrVisible();
-  var ready=vis.filter(function(c){return c.status==='ready';});
-  var readyAll=DATA.corr.filter(function(c){return c.status==='ready';});
-  document.getElementById('n-corr').textContent=readyAll.length||'';
-  var list=document.getElementById('corrlist'), html='', sum='';
-  if(CTAB==='review'){
-    html=ready.length?ready.map(corrHtml).join(''):'<p class="empty">Nothing waiting on you &mdash; your AI keeps drafting.</p>';
-    sum='Tap a card to read the full message. The circle is your approval — nothing sends without it.';
-  } else if(CTAB==='approved'){
-    var ap=vis.filter(function(c){return c.status==='approved'||c.status==='sent'||c.status==='failed';})
-      .sort(function(a,b){return (b.updated||'').localeCompare(a.updated||'')||b.id.localeCompare(a.id);});
-    html=ap.length?ap.map(corrHtml).join(''):'<p class="empty">Nothing approved yet.</p>';
-    sum='Approved emails go out on the hourly run and get logged in Follow Up Boss automatically.';
-  } else {
-    var dr=vis.filter(function(c){return c.status==='draft';});
-    html=dr.length?dr.map(corrHtml).join(''):'<p class="empty">No drafts in progress.</p>';
-    sum='These land in To Approve as soon as Claude marks them finished.';
-  }
-  list.innerHTML=html;
-  document.getElementById('corrsum').textContent=sum;
-}
-function approveCorr(id){
-  var c=corrById(id);if(!c)return;
-  if(!CONFIG.apiUrl){needApi();return;}
-  c.status='approved';c.updated=new Date().toISOString();
-  drawCorr();toast('Approved '+id+' — it sends on the next hourly run.');
-  call({action:'corr_approve',id:id}).then(function(r){if(!r.ok)throw new Error(r.error);})
-  .catch(function(){c.status='ready';drawCorr();toast('Couldn’t save that — the board’s Apps Script needs the v12 update.');});
-}
-function unapproveCorr(id){
-  var c=corrById(id);if(!c)return;
-  if(!CONFIG.apiUrl){needApi();return;}
-  c.status='ready';drawCorr();
-  call({action:'corr_unapprove',id:id}).then(function(r){if(!r.ok)throw new Error(r.error);})
-  .catch(function(){c.status='approved';drawCorr();toast('Couldn’t undo — it may already be sending.');});
-}
-function dismissCorr(id){
-  var c=corrById(id);if(!c)return;
-  if(!CONFIG.apiUrl){needApi();return;}
-  var prev=c.status;c.status='dismissed';drawCorr();
-  toast('Okay — '+id+' won’t be sent.');
-  call({action:'corr_dismiss',id:id}).then(function(r){if(!r.ok)throw new Error(r.error);})
-  .catch(function(){c.status=prev;drawCorr();toast('Couldn’t save that — try again.');});
-}
-document.getElementById('corrTabs').addEventListener('click',function(e){
-  var b=e.target.closest('button');if(!b)return;
-  CTAB=b.getAttribute('data-ctab');
-  document.querySelectorAll('#corrTabs button').forEach(function(x){x.classList.toggle('active',x===b);});
-  drawCorr();
-});
-document.getElementById('corrPills').addEventListener('click',function(e){
-  var b=e.target.closest('button');if(!b)return;
-  CFILTER=b.getAttribute('data-cf');drawCorr();
-});
-document.getElementById('corrlist').addEventListener('click',function(e){
-  var s=e.target.closest('[data-csms]');
-  if(s){ /* let the sms: link open; mark it sent optimistically */
-    var id=s.getAttribute('data-csms');var c=corrById(id);
-    if(c&&c.status==='approved'){c.status='sent';c.sent=new Date().toISOString();
-      call({action:'corr_sent',id:id,result:'sent by text from Jen’s phone'}).catch(function(){});
-      setTimeout(drawCorr,400);}
-    return; /* default anchor behavior opens Messages */
-  }
-  var a=e.target.closest('[data-capprove]');
-  if(a){approveCorr(a.getAttribute('data-capprove'));return;}
-  var u=e.target.closest('[data-cundo]');
-  if(u){unapproveCorr(u.getAttribute('data-cundo'));return;}
-  var x=e.target.closest('[data-cdismiss]');
-  if(x){
-    if(x.classList.contains('armed')){dismissCorr(x.getAttribute('data-cdismiss'));}
-    else{
-      x.classList.add('armed');x.innerHTML='Tap again to skip';
-      setTimeout(function(){if(x&&x.isConnected){x.classList.remove('armed');x.innerHTML='&#10005; Don&rsquo;t send';}},3000);
-    }
-    return;
-  }
-  var o=e.target.closest('[data-copen]');
-  if(o){o.closest('.task').classList.toggle('open');}
-});
-
 /* ---------- explain popup ---------- */
 function explainText(t){
   /* the `explain` column in the Tasks sheet is the single source of truth */
@@ -1115,6 +939,19 @@ document.getElementById('modalAdd').addEventListener('click',function(){
   }).catch(function(){toast('Couldn’t add — try again.');}).then(function(){btn.disabled=false;});
 });
 
+/* v2.14: Jen's private One-Touch page — a quick-link that appears when the
+   board Config has an otcUiUrl row (safe to publish: the page itself is
+   Google-login gated to Jen's account). */
+function drawOtcLink(){
+  if(!CONFIG.otcUiUrl||!/^https?:\/\//.test(CONFIG.otcUiUrl))return;
+  if(document.getElementById('otcLink'))return;
+  var a=document.createElement('a');
+  a.id='otcLink';a.href=CONFIG.otcUiUrl;a.target='_blank';a.rel='noopener';
+  a.innerHTML='&#9993; One-Touch';
+  var row=document.querySelector('.backlink');
+  row.insertBefore(a,row.firstChild);
+}
+
 /* ---------- load ---------- */
 function showSetup(){
   var s=document.getElementById('status');
@@ -1130,8 +967,7 @@ function loadData(first){
     fetchTab('Activity','summary').catch(function(){return [];}),
     fetchTab('Notes','note').catch(function(){return [];}),
     fetchTab('All Leads','tier').catch(function(){return [];}),
-    fetch('packages.json?v='+Date.now()).then(function(r){return r.ok?r.json():{};}).catch(function(){return {};}),
-    fetchTab('Correspondence','channel').catch(function(){return [];})
+    fetch('packages.json?v='+Date.now()).then(function(r){return r.ok?r.json():{};}).catch(function(){return {};})
   ]).then(function(res){
     res[0].forEach(function(r){var k=String(r[0]||'').trim(),v=String(r[1]||'').trim();if(k&&CONFIG.hasOwnProperty(k))CONFIG[k]=v;});
     DATA.tasks=res[1];
@@ -1139,7 +975,6 @@ function loadData(first){
     DATA.notes=res[3];
     DATA.leads=res[4];
     PACKAGES=res[5]||{};
-    DATA.corr=res[6]||[];
     lastLoad=Date.now();
     if(first){
       /* open on the goal with the most tasks ready for Jen */
@@ -1152,7 +987,7 @@ function loadData(first){
       document.getElementById('status').style.display='none';
       document.getElementById('content').style.display='block';
     }
-    draw();drawNotes();drawLeads();drawCorr();
+    draw();drawNotes();drawLeads();drawOtcLink();
   });
 }
 loadData(true).catch(function(){showSetup();});
