@@ -20,8 +20,9 @@
   body{font-family:'Georgia','Times New Roman',serif;background:var(--cream);color:var(--ink);-webkit-tap-highlight-color:transparent;
     padding:calc(32px + env(safe-area-inset-top,0px)) calc(20px + env(safe-area-inset-right,0px)) calc(32px + env(safe-area-inset-bottom,0px)) calc(20px + env(safe-area-inset-left,0px))}
   .wrap{max-width:720px;margin:0 auto}
-  /* v2.11 seller-proposal button on lead cards (package column or packages.json → Drive folder)
-     v2.10 two-column desktop: board left, Listing Leads right; stacks below 941px */
+  /* v2.12 mobile: Listing Leads stack ABOVE the board (≤940px)
+     v2.11 seller-proposal button on lead cards (package column or packages.json → Drive folder)
+     v2.10 two-column desktop: board left, Listing Leads right; stacks on mobile */
   .cols{display:flex;gap:22px;align-items:flex-start}
   #mainPanel{flex:1 1 0;min-width:0}
   #leadsPanel{flex:0 0 340px;min-width:0}
@@ -29,7 +30,7 @@
     .wrap{max-width:1104px}
     #notePanel,footer{max-width:720px;margin-left:auto;margin-right:auto}
   }
-  @media (max-width:940px){.cols{display:block}}
+  @media (max-width:940px){.cols{display:flex;flex-direction:column;gap:0}#leadsPanel{order:-1;flex:none}#mainPanel{flex:none}}
   header{text-align:center;margin-bottom:12px}
   header .logo{height:56px;display:block;margin:0 auto 10px}
   header .logotext{display:none;font-size:26px;letter-spacing:3px;color:var(--nook);text-transform:uppercase;margin-bottom:8px}
