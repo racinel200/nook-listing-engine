@@ -76,6 +76,10 @@
   .askclaude:hover{background:#b0602f;color:#fff;border-color:#b0602f}
   .explainbtn{display:inline-block;font-family:inherit;color:#4a6a86;background:#eef3f8;border:1px solid #d5e0ea;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;margin-left:2px}
   .explainbtn:hover{background:#4a6a86;color:#fff;border-color:#4a6a86}
+  .linkchip{display:inline-block;color:var(--blue);background:var(--blue-bg);border:1px solid #cddcf0;border-radius:10px;padding:0 8px;font-size:12px;text-decoration:none;white-space:nowrap;vertical-align:baseline}
+  .linkchip:hover{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .modal.exmodal a:not(.linkchip):not(.askclaude){color:var(--blue)}
+  .task .detail a:not(.linkchip){color:var(--blue)}
   .exmodal{max-width:540px;max-height:82vh;overflow-y:auto}
   .modal.exmodal .exid{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
   .modal.exmodal h2{margin-bottom:12px;text-transform:none;letter-spacing:0;font-size:18px;color:var(--ink)}
@@ -371,6 +375,23 @@ function linkify(s){
   return esc(s).replace(/(https?:\/\/[^\s]+)/g,function(u){return '<a href="'+escA(u)+'" target="_blank" rel="noopener">view</a>';});
 }
 
+/* Rich text for explain popups, task details and notes:
+   [label](https://url) -> a named link · bare URLs -> a small "domain ↗" chip.
+   Input is escaped first, so only the anchors we build here are HTML. */
+function rich(s){
+  s=esc(s);
+  s=s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)<"]+)\)/g,function(_,label,u){
+    return '<a href="'+escA(u)+'" target="_blank" rel="noopener">'+label+'</a>';
+  });
+  s=s.replace(/(^|[^"'>=\w])(https?:\/\/[^\s<"]+)/g,function(_,pre,u){
+    var tail='';
+    var m=u.match(/[).,;:!?]+$/); if(m){tail=m[0];u=u.slice(0,-tail.length);}
+    var dom=u.replace(/^https?:\/\//,'').split('/')[0];
+    return pre+'<a class="linkchip" href="'+escA(u)+'" target="_blank" rel="noopener">'+esc(dom)+' ↗</a>'+tail;
+  });
+  return s;
+}
+
 function taskHtml(t,mode){
   var onClaude=(mode==='waiting')&&isOnClaude(t);
   var cls='task'+(isDone(t)?' done':'')+(t.priority==='1'?' p1':'')+(mode==='waiting'?(onClaude?' waiting onclaude':' waiting'):'');
@@ -392,11 +413,11 @@ function taskHtml(t,mode){
   var noteBtn='';
   if(isDone(t)) noteBtn=' <button class="notebtn" data-note="'+escA(t.id)+'">&#9998; '+(existing?'Edit note':'Add a note')+'</button>';
   else if(t.type==='jen') noteBtn=' <button class="notebtn" data-note="'+escA(t.id)+'">'+(existing?'&#9998; Edit note':'&#43; Add a note')+'</button>';
-  var noteShow=existing?'<div class="tasknote"><b>Your note for the AI worker</b>'+esc(existing.note)+'</div>':'';
+  var noteShow=existing?'<div class="tasknote"><b>Your note for the AI worker</b>'+rich(existing.note)+'</div>':'';
   return '<div class="'+cls+'">'+box
     +'<div class="body"><div class="txt" data-open="'+escA(t.id)+'">'+esc(t.title)+'</div>'
     +'<div class="meta">'+chips+expl+ask+noteBtn+'</div>'+unlockBadge(t)+wait+res+noteShow
-    +(t.detail?'<div class="detail">'+esc(t.detail)+'</div>':'')
+    +(t.detail?'<div class="detail">'+rich(t.detail)+'</div>':'')
     +'</div>'+undo+'</div>';
 }
 
@@ -491,11 +512,11 @@ function openExplain(id){
   var s=explainText(t);
   if(s){
     body.innerHTML=s.split(/\n\s*\n/).map(function(p){
-      return '<p>'+esc(p).replace(/^(Why|How):/,'<b>$1:</b>').replace(/\n/g,'<br>')+'</p>';
+      return '<p>'+rich(p).replace(/^(Why|How):/,'<b>$1:</b>').replace(/\n/g,'<br>')+'</p>';
     }).join('');
   } else {
     body.innerHTML='<p>No written explanation for this one yet '
-      +(t.detail?'— the short version: '+esc(t.detail):'')
+      +(t.detail?'— the short version: '+rich(t.detail):'')
       +'</p><p>Ask Claude in any chat to “explain task '+esc(t.id)+'” and it’ll write one onto the board.</p>';
   }
   var a=document.getElementById('exClaude');
