@@ -124,6 +124,20 @@
   button.send{font-family:inherit;background:var(--nook);color:#fff;border:none;border-radius:20px;padding:10px 28px;font-size:14px;letter-spacing:1px;cursor:pointer}
   button.send:hover{background:var(--nook-d)}
   button.send:disabled{opacity:.5}
+  .leadsub{font-size:12.5px;color:var(--muted);margin:-8px 0 10px;line-height:1.5}
+  .lead{padding:13px 6px;border-bottom:1px solid var(--line)}
+  .lead:last-child{border-bottom:none}
+  .lead .addr{font-size:15.5px;line-height:1.5;cursor:pointer}
+  .lead .sub{font-size:13px;color:#5c554f;margin-top:2px}
+  .lead .sub b{color:var(--nook-d);font-weight:normal}
+  .lead .meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);margin-top:6px}
+  .chip.lead-now{background:#e9f2ea;color:#2e5c38}
+  .leadcall{display:inline-block;font-family:inherit;color:#2e5c38;background:#e9f2ea;border:1px solid #b7d3bc;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;text-decoration:none;cursor:pointer}
+  .leadcall:hover{background:var(--sage);color:#fff;border-color:var(--sage)}
+  .lead .detail{display:none;font-size:13.5px;color:#5c554f;line-height:1.55;margin-top:7px;background:#fdfcf9;border:1px solid #efe9dd;border-radius:10px;padding:10px 12px}
+  .lead.open .detail{display:block}
+  .lead .detail b{color:var(--nook-d);font-weight:normal;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;display:block;margin:8px 0 2px}
+  .lead .detail b:first-child{margin-top:0}
   .note{padding:10px 6px;border-bottom:1px solid var(--line);font-size:14px}
   .note:last-child{border-bottom:none}
   .note .meta{font-size:11.5px;color:var(--muted);margin-top:2px}
@@ -173,6 +187,8 @@
     .autobtn{font-size:12px;letter-spacing:.3px;padding:9px 13px;text-align:center}
     .task .blockrow{gap:8px;margin-top:9px}
     .blockedby{padding:9px 15px;font-size:12.5px;border-radius:20px}
+    .lead .meta{gap:8px;margin-top:9px}
+    .leadcall,.lead .linkchip{padding:9px 15px;font-size:12.5px;border-radius:20px}
     .task .undo{font-size:13px;padding:6px 4px}
   }
 </style>
@@ -209,6 +225,12 @@
       </div>
       <div id="tabbody"></div>
       <div class="sumline" id="sumline"></div>
+    </div>
+
+    <div class="panel" id="leadsPanel" style="display:none">
+      <h2>Listing Leads</h2>
+      <p class="leadsub">Sellers you can reach out to <b>today</b> &mdash; verified by your daily lead hunt. Tap an address for the full story. Always DNC-check before calling.</p>
+      <div id="leadlist"></div>
     </div>
 
     <div class="panel">
@@ -302,7 +324,7 @@ var CATS={listings:'Goal 1 · Win Listings',presence:'Goal 2 · Online Presence'
 var SHORT={listings:'Listings',presence:'Presence',convert:'Convert',ops:'Systems'};
 var PRIO_LABEL={1:'Do first',2:'This week',3:'When you can'};
 var CONFIG={apiUrl:'',projectId:'',contextTemplate:''};
-var DATA={tasks:[],activity:[],notes:[]};
+var DATA={tasks:[],activity:[],notes:[],leads:[]};
 var TAB='todo', CAT='listings';
 
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -562,6 +584,45 @@ function drawNotes(){
   }).join('');
 }
 
+/* ---------- Listing Leads (All Leads tab, CONTACT NOW tier only) ----------
+   The daily seller-lead hunt writes verified leads to the "All Leads" tab.
+   Only CONTACT NOW rows (true FSBOs / confirmed expired-withdrawn — safe to
+   reach out to) are shown here. Watch/monitor rows never render on the site. */
+function leadPhone(s){var m=String(s||'').match(/\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}/);return m?m[0]:'';}
+function leadHtml(l,i){
+  var phone=leadPhone(l['listed by']);
+  var price=String(l['asking now']||'').trim();
+  var area=String(l.area||'').trim();
+  var signal=String(l.signal||'').trim();
+  var call=phone?'<a class="leadcall" href="tel:'+escA(phone.replace(/[^\d+]/g,''))+'">&#9743; Call '+esc(phone)+'</a>':'';
+  var src=String(l.source||'').trim();
+  var srcChip=/^https?:\/\//.test(src)?'<a class="linkchip" href="'+escA(src)+'" target="_blank" rel="noopener">listing &#8599;</a>':'';
+  var d='';
+  if(String(l['property snapshot']||'').trim())d+='<b>The property</b>'+rich(l['property snapshot']);
+  if(String(l["why it's a lead (evidence)"]||'').trim())d+='<b>Why it&rsquo;s a lead</b>'+rich(l["why it's a lead (evidence)"]);
+  if(String(l['contact rules today']||'').trim())d+='<b>Contact rules</b>'+rich(l['contact rules today']);
+  if(String(l['suggested next step']||'').trim())d+='<b>Next step</b>'+rich(l['suggested next step']);
+  return '<div class="lead" data-lead="'+i+'">'
+    +'<div class="addr" data-leadopen="'+i+'">'+esc(l.address||'')+'</div>'
+    +'<div class="sub">'+(area?esc(area)+' &middot; ':'')+(price?'<b>'+esc(price)+'</b>':'')+(signal?' &middot; '+esc(signal):'')+'</div>'
+    +'<div class="meta"><span class="chip lead-now">Contact now</span>'+call+srcChip+'</div>'
+    +(d?'<div class="detail">'+d+'</div>':'')
+    +'</div>';
+}
+function drawLeads(){
+  var panel=document.getElementById('leadsPanel');
+  if(!DATA.leads.length){panel.style.display='none';return;}
+  var now=DATA.leads.filter(function(l){return String(l.tier||'').trim().toUpperCase()==='CONTACT NOW';});
+  panel.style.display='block';
+  document.getElementById('leadlist').innerHTML=now.length
+    ?now.map(leadHtml).join('')
+    :'<p class="empty">No contact-ready leads right now &mdash; the daily hunt keeps looking.</p>';
+}
+document.getElementById('leadlist').addEventListener('click',function(e){
+  var o=e.target.closest('[data-leadopen]');
+  if(o){o.closest('.lead').classList.toggle('open');}
+});
+
 /* ---------- explain popup ---------- */
 function explainText(t){
   /* the `explain` column in the Tasks sheet is the single source of truth */
@@ -762,12 +823,14 @@ function loadData(first){
     fetchRows('Config').catch(function(){return [];}),
     fetchTab('Tasks','id'),
     fetchTab('Activity','summary').catch(function(){return [];}),
-    fetchTab('Notes','note').catch(function(){return [];})
+    fetchTab('Notes','note').catch(function(){return [];}),
+    fetchTab('All Leads','tier').catch(function(){return [];})
   ]).then(function(res){
     res[0].forEach(function(r){var k=String(r[0]||'').trim(),v=String(r[1]||'').trim();if(k&&CONFIG.hasOwnProperty(k))CONFIG[k]=v;});
     DATA.tasks=res[1];
     DATA.activity=res[2];
     DATA.notes=res[3];
+    DATA.leads=res[4];
     lastLoad=Date.now();
     if(first){
       /* open on the goal with the most tasks ready for Jen */
@@ -780,7 +843,7 @@ function loadData(first){
       document.getElementById('status').style.display='none';
       document.getElementById('content').style.display='block';
     }
-    draw();drawNotes();
+    draw();drawNotes();drawLeads();
   });
 }
 loadData(true).catch(function(){showSetup();});
