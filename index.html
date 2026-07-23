@@ -103,8 +103,13 @@
   .notebtn:hover{background:var(--nook);border-color:var(--nook);color:#fff}
   .task .tasknote{font-size:12.5px;color:#5c554f;margin-top:5px;background:#fbf7ef;border:1px solid #efe4d0;border-left:3px solid var(--gold);border-radius:8px;padding:7px 10px;line-height:1.5}
   .task .tasknote b{color:var(--nook-d);font-weight:normal;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:2px}
-  .task .unlocks{display:inline-block;font-size:11px;color:#8a6d2f;background:#fbf5e6;border:1px solid #eddcb2;border-radius:10px;padding:2px 10px;margin-top:5px;letter-spacing:.3px}
-  .task .unlocks b{color:#6f5620;font-weight:bold}
+  .task .blockrow{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px}
+  .blockedby{display:inline-block;font-family:inherit;color:#8a6d2f;background:#fbf5e6;border:1px solid #eddcb2;border-radius:10px;padding:2px 10px;font-size:11px;letter-spacing:.3px;cursor:pointer}
+  .blockedby:hover{background:#f3e6c4;border-color:#e0c98a}
+  .blockedby.ai{color:var(--blue);background:var(--blue-bg);border-color:#cddcf0}
+  .blockedby.ai:hover{background:#dbe6f5;border-color:#b3caea}
+  @keyframes taskflash{0%{background:#fff6d8}60%{background:#fff6d8}100%{background:transparent}}
+  .task.flash{animation:taskflash 1.6s ease-out;border-radius:10px}
   .action{display:flex;gap:12px;padding:12px 6px;border-bottom:1px solid var(--line)}
   .action:last-child{border-bottom:none}
   .action .dot{flex:0 0 10px;height:10px;border-radius:50%;background:var(--blue);margin-top:7px}
@@ -198,7 +203,7 @@
 
     <footer id="footer">
       Two kinds of tasks: <b>JEN</b> (you do it &mdash; tap the circle when done) and <b>AI</b> (the worker picks it up automatically once unblocked).
-      The gold &#9889; badge shows how many tasks &mdash; Claude&rsquo;s and yours &mdash; finishing that one unlocks down the chain; the biggest unlockers sort to the top. The worker runs hourly and never sends, publishes, or spends without your approval.
+      A task that&rsquo;s waiting shows a <b>&#128274; Blocked by</b> button &mdash; tap it to jump to the task that has to finish first. The worker runs hourly and never sends, publishes, or spends without your approval.
       Not sure why a task is on the list? Tap <b>Explain this</b> on any card for the why and the how.
       A green <b>Automation solution proposed</b> button means your automation scout found a shortcut &mdash; tap it for a ready-made prompt, call, text, or email.
     </footer>
@@ -350,41 +355,6 @@ function noteFor(id){
   return found;
 }
 
-/* ---------- unlock counts ----------
-   For each task: how many not-yet-done tasks are stuck behind it, following the
-   whole dependency chain from the sheet's `deps` column (if J6 unlocks A14 and
-   A14 unlocks A20, J6 is holding up both). Counted separately for Claude (ai)
-   tasks and Jen tasks. Done tasks don't count and don't pass the chain along. */
-var UNLOCKS={};
-function computeUnlocks(){
-  UNLOCKS={};
-  var byDep={};
-  DATA.tasks.forEach(function(x){
-    if(isDone(x))return;
-    depsList(x).forEach(function(d){(byDep[d]=byDep[d]||[]).push(x);});
-  });
-  DATA.tasks.forEach(function(t){
-    var seen={},q=[t.id],ai=0,jen=0;
-    while(q.length){
-      var id=q.shift();
-      (byDep[id]||[]).forEach(function(x){
-        if(seen[x.id])return;seen[x.id]=1;
-        if(x.type==='ai')ai++;else jen++;
-        q.push(x.id);
-      });
-    }
-    UNLOCKS[t.id]={ai:ai,jen:jen};
-  });
-}
-function unlockBadge(t){
-  if(isDone(t)||t.type!=='jen')return '';
-  var u=UNLOCKS[t.id]||{ai:0,jen:0};
-  if(!u.ai&&!u.jen)return '';
-  var parts=[];
-  if(u.ai)parts.push('<b>'+u.ai+'</b> Claude action'+(u.ai>1?'s':''));
-  if(u.jen)parts.push('<b>'+u.jen+'</b> of your tasks');
-  return '<div class="unlocks" title="Finish this and these get unblocked">&#9889; Unlocks '+parts.join(' + ')+'</div>';
-}
 
 function claudeUrl(t){
   var tpl=CONFIG.contextTemplate||('Help me with this task from my Nook Realty board ({id}): {task} — {detail}');
@@ -465,7 +435,7 @@ function rich(s){
 function taskHtml(t,mode){
   var onClaude=(mode==='waiting')&&isOnClaude(t);
   var cls='task'+(isDone(t)?' done':'')+(t.priority==='1'?' p1':'')+(mode==='waiting'?(onClaude?' waiting onclaude':' waiting'):'');
-  var chips='<span class="chip '+(t.type==='ai'?'ai':'jen')+'">'+(t.type==='ai'?'AI':'JEN')+'</span>'+esc(t.id);
+  var chips='<span class="chip '+(t.type==='ai'?'ai':'jen')+'">'+(t.type==='ai'?'AI':'JEN')+'</span>';
   var ask='';
   if(!isDone(t)&&t.type==='jen'){
     ask=autoFor(t)
@@ -475,9 +445,13 @@ function taskHtml(t,mode){
   var expl=' <button class="explainbtn" data-explain="'+escA(t.id)+'">Explain this</button>';
   var wait='';
   if(mode==='waiting'){
-    wait=onClaude
-      ?'<div class="meta claude">Claude&rsquo;s working on: '+esc(claudeDeps(t).map(function(d){var x=byId(d);return d+(x?' — '+x.title:'');}).join(' · '))+'</div>'
-      :'<div class="meta">Waiting on: '+esc(waitingOn(t).join(' · '))+'</div>';
+    /* one tappable "Blocked by J15" button per unmet dependency — jumps to the blocker */
+    var blockers=unmetDeps(t).map(function(d){
+      var x=byId(d);
+      return '<button class="blockedby'+(x&&x.type==='ai'?' ai':'')+'" data-goto="'+escA(d)+'"'
+        +(x?' title="'+escA(x.title)+'"':'')+'>&#128274; Blocked by '+esc(d)+'</button>';
+    }).join('');
+    wait='<div class="blockrow">'+blockers+'</div>';
   }
   var res=(isDone(t)&&t.result)?'<div class="result">&rarr; '+linkify(t.result)+'</div>':'';
   var undo=(isDone(t)&&t.type==='jen'&&TAB==='done')?'<button class="undo" data-undo="'+escA(t.id)+'">undo</button>':'';
@@ -489,9 +463,9 @@ function taskHtml(t,mode){
   if(isDone(t)) noteBtn=' <button class="notebtn" data-note="'+escA(t.id)+'">&#9998; '+(existing?'Edit note':'Add a note')+'</button>';
   else if(t.type==='jen') noteBtn=' <button class="notebtn" data-note="'+escA(t.id)+'">'+(existing?'&#9998; Edit note':'&#43; Add a note')+'</button>';
   var noteShow=existing?'<div class="tasknote"><b>Your note for the AI worker</b>'+rich(existing.note)+'</div>':'';
-  return '<div class="'+cls+'">'+box
+  return '<div class="'+cls+'" data-tid="'+escA(t.id)+'">'+box
     +'<div class="body"><div class="txt" data-open="'+escA(t.id)+'">'+esc(t.title)+'</div>'
-    +'<div class="meta">'+chips+expl+ask+noteBtn+'</div>'+unlockBadge(t)+wait+res+noteShow
+    +'<div class="meta">'+chips+expl+ask+noteBtn+'</div>'+wait+res+noteShow
     +(t.detail?'<div class="detail">'+rich(t.detail)+'</div>':'')
     +'</div>'+undo+'</div>';
 }
@@ -509,7 +483,6 @@ function drawGoalTabs(){
 }
 
 function draw(){
-  computeUnlocks();
   drawGoalTabs();
   var catTasks=DATA.tasks.filter(inCat);
   var doneCount=catTasks.filter(isDone).length;
@@ -524,11 +497,6 @@ function draw(){
     groups.forEach(function(g){
       var ts=jenReady.filter(function(t){return (t.priority||'2')===g[0];});
       if(!ts.length)return;
-      /* biggest unlockers float to the top within each priority group */
-      ts=ts.slice().sort(function(a,b){
-        var ua=UNLOCKS[a.id]||{ai:0,jen:0},ub=UNLOCKS[b.id]||{ai:0,jen:0};
-        return (ub.ai-ua.ai)||(ub.jen-ua.jen);
-      });
       shown+=ts.length;
       html+='<div class="prio-head '+g[1]+'">'+PRIO_LABEL[g[0]]+'</div>'+ts.map(function(t){return taskHtml(t,'ready');}).join('');
     });
@@ -624,9 +592,33 @@ document.getElementById('tabbody').addEventListener('click',function(e){
   if(u){markUndo(u.getAttribute('data-undo'));return;}
   var nt=e.target.closest('[data-note]');
   if(nt){openNote(nt.getAttribute('data-note'));return;}
+  var g=e.target.closest('[data-goto]');
+  if(g){gotoTask(g.getAttribute('data-goto'));return;}
   var o=e.target.closest('[data-open]');
   if(o){o.closest('.task').classList.toggle('open');}
 });
+
+/* jump from a "Blocked by J15" button to the blocking task: switch to its goal
+   tab and the sub-tab it lives under, redraw, then scroll to it and flash it. */
+function gotoTask(id){
+  var t=byId(id);
+  if(!t){toast('Can’t find task '+id+'.');return;}
+  var wantTab=(t.type==='ai')?'actions':(isDone(t)?'done':'todo');
+  var changed=false;
+  if(CAT!==t.category){CAT=t.category;changed=true;}
+  if(TAB!==wantTab){
+    TAB=wantTab;
+    document.querySelectorAll('#subtabs button').forEach(function(x){x.classList.toggle('active',x.getAttribute('data-tab')===wantTab);});
+    changed=true;
+  }
+  if(changed)draw();
+  /* AI tasks that are already ready sit in the queue as task cards; if a blocker
+     has no card in the current view, fall back to opening its explanation. */
+  var el=document.querySelector('#tabbody .task[data-tid="'+(window.CSS&&CSS.escape?CSS.escape(id):id)+'"]');
+  if(!el){openExplain(id);return;}
+  el.scrollIntoView({behavior:'smooth',block:'center'});
+  el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');
+}
 document.getElementById('goaltabs').addEventListener('click',function(e){
   var b=e.target.closest('button');if(!b)return;
   CAT=b.getAttribute('data-cat');draw();
