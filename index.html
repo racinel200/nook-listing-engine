@@ -20,9 +20,9 @@
   body{font-family:'Georgia','Times New Roman',serif;background:var(--cream);color:var(--ink);-webkit-tap-highlight-color:transparent;
     padding:calc(32px + env(safe-area-inset-top,0px)) calc(20px + env(safe-area-inset-right,0px)) calc(32px + env(safe-area-inset-bottom,0px)) calc(20px + env(safe-area-inset-left,0px))}
   .wrap{max-width:720px;margin:0 auto}
-  /* v2.14 One-Touch moved to Jen's PRIVATE page (served by the queue sheet's
-     Apps Script, Google-login gated) — the public panel is gone; a "✉ One-Touch"
-     quick-link appears when the board Config has an otcUiUrl row
+  /* v2.15 One-Touch page hosted in this repo at onetouch.html (public URL,
+     Google sign-in gated to Jen; data lives in the private queue sheet) —
+     static ✉ One-Touch quick-link
      v2.12 mobile: Listing Leads stack ABOVE the board (≤940px)
      v2.11 seller-proposal button on lead cards (package column or packages.json → Drive folder)
      v2.10 two-column desktop: board left, Listing Leads right; stacks on mobile */
@@ -232,6 +232,7 @@
     <p>The seller-listing plan &middot; you + your AI worker, one board</p>
   </header>
   <div class="backlink">
+    <a href="onetouch.html">&#9993; One-Touch</a>
     <a href="https://docs.google.com/spreadsheets/d/1UyL52RjajpVkHBBC9DnXEpWSAOxW0Jj-r2JU5K3qGM4/edit" target="_blank" rel="noopener">&#9638; Board Sheet</a>
     <a href="https://app.followupboss.com" target="_blank" rel="noopener">&#9743; Follow Up Boss</a>
     <a href="https://mail.google.com" target="_blank" rel="noopener">&#9993; Gmail</a>
@@ -356,7 +357,7 @@ var KEY='nook-board-2026';
 var CATS={listings:'Goal 1 · Win Listings',presence:'Goal 2 · Online Presence',convert:'Goal 3 · Convert & Score',ops:'Goal 4 · Tools & Systems'};
 var SHORT={listings:'Listings',presence:'Presence',convert:'Convert',ops:'Systems'};
 var PRIO_LABEL={1:'Do first',2:'This week',3:'When you can'};
-var CONFIG={apiUrl:'',projectId:'',contextTemplate:'',otcUiUrl:''};
+var CONFIG={apiUrl:'',projectId:'',contextTemplate:''};
 var DATA={tasks:[],activity:[],notes:[],leads:[]};
 var TAB='todo', CAT='listings';
 
@@ -939,19 +940,6 @@ document.getElementById('modalAdd').addEventListener('click',function(){
   }).catch(function(){toast('Couldn’t add — try again.');}).then(function(){btn.disabled=false;});
 });
 
-/* v2.14: Jen's private One-Touch page — a quick-link that appears when the
-   board Config has an otcUiUrl row (safe to publish: the page itself is
-   Google-login gated to Jen's account). */
-function drawOtcLink(){
-  if(!CONFIG.otcUiUrl||!/^https?:\/\//.test(CONFIG.otcUiUrl))return;
-  if(document.getElementById('otcLink'))return;
-  var a=document.createElement('a');
-  a.id='otcLink';a.href=CONFIG.otcUiUrl;a.target='_blank';a.rel='noopener';
-  a.innerHTML='&#9993; One-Touch';
-  var row=document.querySelector('.backlink');
-  row.insertBefore(a,row.firstChild);
-}
-
 /* ---------- load ---------- */
 function showSetup(){
   var s=document.getElementById('status');
@@ -987,7 +975,7 @@ function loadData(first){
       document.getElementById('status').style.display='none';
       document.getElementById('content').style.display='block';
     }
-    draw();drawNotes();drawLeads();drawOtcLink();
+    draw();drawNotes();drawLeads();
   });
 }
 loadData(true).catch(function(){showSetup();});

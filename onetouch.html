@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#faf8f4">
+<link rel="icon" type="image/png" href="favicon.png">
+<title>One-Touch Correspondence — Nook</title>
+<!-- This page is PUBLIC but holds zero data. Jen signs in with Google; every
+     API call carries her Google-signed ID token, and the private queue's
+     Apps Script verifies it server-side (her email + our OAuth client id)
+     before returning or changing anything. Anyone else is refused. -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root{--nook:#c3233d;--nook-d:#8f1a2d;--ink:#221f1f;--muted:#8a827c;--cream:#faf8f4;--line:#f0ebe2;--gold:#c9a86a;--sage:#5a7a5e;--blue:#3f6fae;--blue-bg:#e8eef7}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Georgia,serif;background:var(--cream);color:var(--ink);-webkit-tap-highlight-color:transparent;
+    padding:calc(28px + env(safe-area-inset-top,0px)) 16px calc(28px + env(safe-area-inset-bottom,0px))}
+  .wrap{max-width:680px;margin:0 auto}
+  header{text-align:center;margin-bottom:16px}
+  header h1{font-size:20px;letter-spacing:2px;text-transform:uppercase}
+  header p{color:var(--muted);font-size:13.5px;margin-top:5px;line-height:1.5}
+  header a{color:var(--nook-d)}
+  .panel{background:#fff;border-radius:14px;padding:20px;box-shadow:0 2px 10px rgba(143,26,45,.07)}
+  #gate{text-align:center;padding:26px 10px}
+  #gate p{color:var(--muted);font-size:14px;margin-bottom:16px;line-height:1.6}
+  #gbtn{display:flex;justify-content:center}
+  .pills,.tabs2{text-align:center;margin-bottom:6px}
+  .pills button,.tabs2 button{font-family:inherit;background:#f6f2ea;border:1px solid #e8e1d3;color:var(--muted);border-radius:20px;padding:8px 16px;font-size:13px;margin:3px 2px;cursor:pointer;text-transform:capitalize;touch-action:manipulation}
+  .tabs2 button.active{background:var(--nook);border-color:var(--nook);color:#fff}
+  .pills button.active{background:var(--ink);border-color:var(--ink);color:#fff}
+  .count{display:inline-block;background:#f7e6e9;color:var(--nook-d);border-radius:10px;padding:0 7px;font-size:11px;margin-left:4px}
+  .tabs2 button.active .count{background:#fff}
+  .card{display:flex;gap:13px;align-items:flex-start;padding:14px 4px;border-bottom:1px solid var(--line)}
+  .card:last-child{border-bottom:none}
+  .box{flex:0 0 30px;height:30px;border:2px solid var(--gold);border-radius:50%;position:relative;cursor:pointer;background:none;padding:0}
+  .box:before{content:'';position:absolute;inset:-7px;border-radius:50%}
+  .card.hi .box{border-color:var(--nook)}
+  .card.done .box{background:var(--sage);border-color:var(--sage);cursor:default}
+  .card.done .box:after{content:'\2713';color:#fff;position:absolute;top:2px;left:7px;font-size:17px}
+  .bodyc{flex:1;min-width:0}
+  .ttl{font-size:15.5px;line-height:1.5;cursor:pointer}
+  .sub{font-size:13px;color:#5c554f;margin-top:2px}
+  .sub b{color:var(--nook-d);font-weight:normal}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:11.5px;color:var(--muted);margin-top:9px}
+  .chip{display:inline-block;background:#f6f0e6;color:#7a6f5d;border-radius:10px;padding:2px 10px;font-size:11px;letter-spacing:.5px;text-transform:uppercase}
+  .chip.em{background:#eef3f8;color:#4a6a86}.chip.tx{background:#f1ecfa;color:#5b3e8f}
+  .abtn{display:inline-block;font-family:inherit;border-radius:20px;padding:9px 15px;font-size:12.5px;letter-spacing:.5px;text-transform:uppercase;text-decoration:none;cursor:pointer;touch-action:manipulation}
+  .fub{color:#2a5b8f;background:#eaf1f9;border:1px solid #c2d4e8}
+  .skip{color:var(--muted);background:#f6f2ea;border:1px solid #e8e1d3}
+  .skip.armed{background:var(--nook);border-color:var(--nook);color:#fff}
+  .defer{color:#8a6d2f;background:#fbf5e6;border:1px solid #eddcb2}
+  .smsbtn{color:#2e5c38;background:#e9f2ea;border:1px solid #b7d3bc}
+  .undo{font-size:12px;color:var(--muted);border:none;background:none;cursor:pointer;font-family:inherit;text-decoration:underline;flex-shrink:0;padding:6px 4px}
+  .detail{display:none;font-size:13.5px;color:#5c554f;line-height:1.6;margin-top:8px;background:#fdfcf9;border:1px solid #efe9dd;border-radius:10px;padding:10px 12px;white-space:pre-wrap}
+  .card.open .detail{display:block}
+  .reason{font-size:12.5px;color:var(--gold);margin-top:5px}
+  .queue{font-size:12.5px;color:#a1802f;margin-top:6px}
+  .sent{font-size:12.5px;color:var(--sage);margin-top:6px}
+  .empty{color:var(--muted);text-align:center;padding:20px 0;font-size:15px}
+  .sum{font-size:12.5px;color:var(--muted);margin-top:12px;text-align:center;line-height:1.5}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:20px;padding:10px 24px;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;max-width:90vw;text-align:center;z-index:9}
+  .toast.show{opacity:1}
+  #load{text-align:center;color:var(--muted);padding:30px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>One-Touch Correspondence</h1>
+    <p>Outreach Claude drafted from Follow Up Boss. Tap the circle to approve &mdash; emails send automatically within the hour from your Gmail; texts send from your phone with one tap. Nothing sends without your tap. <a href="./">&larr; back to the board</a></p>
+  </header>
+  <div class="panel">
+    <div id="gate">
+      <p>This page is private &mdash; sign in with your Google account to open your queue.<br>(Only jennifer@nookrealtygroup.com gets in.)</p>
+      <div id="gbtn"></div>
+      <p id="gateErr" style="color:var(--nook);display:none"></p>
+    </div>
+    <div id="load" style="display:none">Loading your queue&hellip;</div>
+    <div id="app" style="display:none">
+      <div class="pills" id="pills"></div>
+      <div class="tabs2" id="tabs">
+        <button data-t="pending" class="active">To Approve<span class="count" id="nP"></span></button>
+        <button data-t="done">Approved &amp; Sent</button>
+        <button data-t="deferred">Deferred</button>
+      </div>
+      <div id="list"></div>
+      <div class="sum" id="sum"></div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+(function(){
+'use strict';
+/* The queue API URL is public here on purpose: worker actions need a secret
+   key this page never has, and the page actions below only answer to Jen's
+   verified Google sign-in. The OAuth client id comes from the public board
+   sheet's Config tab (otcClientId row) so it can be set without a code push. */
+var QAPI='https://script.google.com/macros/s/AKfycbyMPzbkkU6G8Mj1EVpa3VdZOAEnGJy4AOGkAEjg0NBFOdTstKDxAoppwxcqfBjnH70v/exec';
+var BOARD_CONFIG='https://docs.google.com/spreadsheets/d/1UyL52RjajpVkHBBC9DnXEpWSAOxW0Jj-r2JU5K3qGM4/gviz/tq?tqx=out:csv&sheet=Config';
+var FUB='https://sprouthomes.followupboss.com/2/people/view/';
+var IDT='',ROWS=[],TABX='pending',FIL='all',CLIENT_ID='';
+
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function escA(s){return esc(s).replace(/"/g,'&quot;');}
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.x);toast.x=setTimeout(function(){t.classList.remove('show');},2600);}
+function fmt(s){var d=new Date(s);if(isNaN(d))return '';
+  return d.toLocaleDateString('en-US',{timeZone:'America/Chicago',month:'short',day:'numeric'})+' at '+d.toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour:'numeric',minute:'2-digit'})+' CT';}
+function byId(id){for(var i=0;i<ROWS.length;i++)if(ROWS[i].id===id)return ROWS[i];return null;}
+function api(params){
+  params.idt=IDT;
+  var qs=Object.keys(params).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);}).join('&');
+  return fetch(QAPI+'?'+qs).then(function(r){return r.json();});
+}
+
+function card(r){
+  var st=r.status.toLowerCase(),em=(r.channel||'text').toLowerCase()==='email';
+  var cls='card'+((st==='approved'||st==='completed')?' done':'')+(r.priority==='1'?' hi':'');
+  var ttl=esc(r.name||'')+(em?(' — '+esc(r.subject||'')):(' — '+esc(String(r.message||'').slice(0,60))+(String(r.message||'').length>60?'…':'')));
+  var chips='<span class="chip '+(em?'em">✉ Email':'tx">💬 Text')+'</span>'+(r.trigger?'<span class="chip">'+esc(r.trigger)+'</span>':'');
+  var fub=(r.fubpersonid&&r.fubpersonid!=='0')?'<a class="abtn fub" target="_blank" rel="noopener" href="'+FUB+escA(r.fubpersonid)+'">FUB ↗</a>':'';
+  var acts='',line='',undo='';
+  if(st==='pending'){
+    acts='<button class="abtn skip" data-skip="'+escA(r.id)+'">✕ Skip</button><button class="abtn defer" data-defer="'+escA(r.id)+'">Later</button>';
+  } else if(st==='approved'){
+    if(em)line='<div class="queue">⏳ Approved — sends within the hour from your Gmail.</div>';
+    else{line='<div class="queue">⏳ Approved — tap Send Text to send it from your phone.</div>';
+      acts='<a class="abtn smsbtn" data-sms="'+escA(r.id)+'" href="sms:'+escA(String(r.to||'').replace(/[^+\d]/g,''))+'?&body='+encodeURIComponent(r.message||'')+'">💬 Send Text</a>';}
+    undo='<button class="undo" data-undo="'+escA(r.id)+'">undo</button>';
+  } else if(st==='completed'){
+    line='<div class="sent">✓ Sent'+(r.sentat?' '+fmt(r.sentat):'')+'</div>';
+  } else if(st==='deferred'){
+    acts='<button class="abtn defer" data-restore="'+escA(r.id)+'">Bring back</button>';
+    if((r.notes||'').indexOf('send failed')>-1)line='<div class="queue">⚠ '+esc(r.notes)+'</div>';
+  }
+  var box=(st==='pending'||st==='deferred')?'<button class="box" data-ok="'+escA(r.id)+'" title="Approve"></button>':'<span class="box"></span>';
+  var toLine=r.to?'<div class="sub">To <b>'+esc(r.name||'')+'</b> · '+esc(r.to)+'</div>':'';
+  var reason=r.reason?'<div class="reason">'+esc(r.reason)+'</div>':'';
+  return '<div class="'+cls+'">'+box+'<div class="bodyc">'
+    +'<div class="ttl" data-open="'+escA(r.id)+'">'+ttl+'</div>'+toLine
+    +'<div class="meta">'+chips+fub+acts+'</div>'+reason+line
+    +'<div class="detail">'+(em?('Subject: '+esc(r.subject||'')+'\n\n'):'')+esc(r.message||'')+'</div>'
+    +'</div>'+undo+'</div>';
+}
+function draw(){
+  var live=ROWS.filter(function(r){return r.status.toLowerCase()!=='canceled';});
+  var trigs={};live.forEach(function(r){if(r.trigger)trigs[r.trigger.toLowerCase()]=1;});
+  var tk=Object.keys(trigs).sort();if(FIL!=='all'&&!trigs[FIL])FIL='all';
+  document.getElementById('pills').innerHTML=tk.length>1?['all'].concat(tk).map(function(k){
+    return '<button data-f="'+escA(k)+'"'+(FIL===k?' class="active"':'')+'>'+esc(k)+'</button>';}).join(''):'';
+  var vis=live.filter(function(r){return FIL==='all'||String(r.trigger||'').toLowerCase()===FIL;});
+  var pend=vis.filter(function(r){return r.status.toLowerCase()==='pending';});
+  document.getElementById('nP').textContent=live.filter(function(r){return r.status.toLowerCase()==='pending';}).length||'';
+  var html='',sum='';
+  if(TABX==='pending'){
+    html=pend.length?pend.map(card).join(''):'<p class="empty">Nothing waiting on you — Claude keeps watching Follow Up Boss.</p>';
+    sum='Tap a name to read the full message. The circle is your approval — nothing sends without it.';
+  } else if(TABX==='done'){
+    var d=vis.filter(function(r){var s=r.status.toLowerCase();return s==='approved'||s==='completed';}).sort(function(a,b){return (b.updated||'').localeCompare(a.updated||'');});
+    html=d.length?d.map(card).join(''):'<p class="empty">Nothing approved yet.</p>';
+    sum='Approved emails go out on the hourly run and get logged on the Follow Up Boss contact.';
+  } else {
+    var f=vis.filter(function(r){return r.status.toLowerCase()==='deferred';});
+    html=f.length?f.map(card).join(''):'<p class="empty">Nothing deferred.</p>';
+    sum='Deferred messages wait here — bring one back or approve it when the time is right.';
+  }
+  document.getElementById('list').innerHTML=html;
+  document.getElementById('sum').textContent=sum;
+}
+function authFail(msg){
+  document.getElementById('app').style.display='none';
+  document.getElementById('load').style.display='none';
+  var g=document.getElementById('gate');g.style.display='block';
+  var e=document.getElementById('gateErr');e.textContent=msg;e.style.display='block';
+  IDT='';
+}
+function act(id,a,okMsg){
+  var r=byId(id);if(!r)return;var prev=r.status,prevSent=r.sentat;
+  if(a==='approve')r.status='approved';else if(a==='unapprove')r.status='pending';
+  else if(a==='cancel')r.status='canceled';else if(a==='defer')r.status='deferred';
+  else if(a==='restore')r.status='pending';else if(a==='sent'){r.status='completed';r.sentat=new Date().toISOString();}
+  r.updated=new Date().toISOString();draw();if(okMsg)toast(okMsg);
+  api({action:'ui_act',id:id,act:a}).then(function(res){
+    if(res&&res.auth===false){r.status=prev;r.sentat=prevSent;draw();authFail(res.error||'Sign-in expired — sign in again.');return;}
+    if(!res||!res.ok){r.status=prev;r.sentat=prevSent;draw();toast(res&&res.error?res.error:'Couldn’t save — try again.');}
+  }).catch(function(){r.status=prev;r.sentat=prevSent;draw();toast('Couldn’t save — try again.');});
+}
+function loadQueue(first){
+  if(first){document.getElementById('gate').style.display='none';document.getElementById('load').style.display='block';}
+  return api({action:'ui_list'}).then(function(res){
+    if(res&&res.auth===false){authFail(res.error||'Not authorized.');return;}
+    if(!res||!res.ok){authFail(res&&res.error?res.error:'Couldn’t load the queue.');return;}
+    ROWS=res.rows||[];
+    document.getElementById('load').style.display='none';
+    document.getElementById('app').style.display='block';
+    loadQueue._t=Date.now();
+    draw();
+  }).catch(function(){authFail('Couldn’t reach the queue — refresh to try again.');});
+}
+document.getElementById('tabs').addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;TABX=b.getAttribute('data-t');
+  document.querySelectorAll('#tabs button').forEach(function(x){x.classList.toggle('active',x===b);});draw();
+});
+document.getElementById('pills').addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;FIL=b.getAttribute('data-f');draw();
+});
+document.getElementById('list').addEventListener('click',function(e){
+  var s=e.target.closest('[data-sms]');
+  if(s){act(s.getAttribute('data-sms'),'sent','Marked sent — your Messages app is opening.');return;}
+  var o=e.target.closest('[data-ok]');
+  if(o){act(o.getAttribute('data-ok'),'approve','Approved — it sends on the next hourly run.');return;}
+  var u=e.target.closest('[data-undo]');
+  if(u){act(u.getAttribute('data-undo'),'unapprove','Back to To Approve.');return;}
+  var d=e.target.closest('[data-defer]');
+  if(d){act(d.getAttribute('data-defer'),'defer','Deferred — it’ll wait for you.');return;}
+  var rr=e.target.closest('[data-restore]');
+  if(rr){act(rr.getAttribute('data-restore'),'restore','Back in To Approve.');return;}
+  var x=e.target.closest('[data-skip]');
+  if(x){
+    if(x.classList.contains('armed')){act(x.getAttribute('data-skip'),'cancel','Skipped — it won’t be sent.');}
+    else{x.classList.add('armed');x.textContent='Tap again to skip';
+      setTimeout(function(){if(x.isConnected){x.classList.remove('armed');x.innerHTML='✕ Skip';}},3000);}
+    return;
+  }
+  var op=e.target.closest('[data-open]');
+  if(op){op.closest('.card').classList.toggle('open');}
+});
+/* silent refresh when the app returns to the foreground (like the board) */
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='visible'&&IDT&&Date.now()-(loadQueue._t||0)>60000)loadQueue(false);
+});
+
+/* ---- sign-in bootstrap: client id from the public board Config, then GIS ---- */
+function parseCSV(text){
+  var rows=[],row=[],cur='',inQ=false;
+  for(var i=0;i<text.length;i++){var ch=text[i];
+    if(inQ){ if(ch==='"'){ if(text[i+1]==='"'){cur+='"';i++;} else inQ=false; } else cur+=ch; }
+    else { if(ch==='"') inQ=true;
+      else if(ch===','){row.push(cur);cur='';}
+      else if(ch==='\n'){row.push(cur.replace(/\r$/,''));rows.push(row);row=[];cur='';}
+      else cur+=ch; } }
+  if(cur!==''||row.length){row.push(cur.replace(/\r$/,''));rows.push(row);}
+  return rows;
+}
+function startGIS(){
+  if(!window.google||!google.accounts||!google.accounts.id){setTimeout(startGIS,150);return;}
+  google.accounts.id.initialize({client_id:CLIENT_ID,callback:function(resp){
+    IDT=resp.credential||'';
+    if(IDT)loadQueue(true);
+  }});
+  google.accounts.id.renderButton(document.getElementById('gbtn'),{theme:'outline',size:'large',text:'signin_with',shape:'pill'});
+  google.accounts.id.prompt();
+}
+fetch(BOARD_CONFIG).then(function(r){return r.text();}).then(function(t){
+  parseCSV(t).forEach(function(r){if(String(r[0]||'').trim()==='otcClientId')CLIENT_ID=String(r[1]||'').trim();});
+  if(!CLIENT_ID){authFail('Almost there — the OAuth client id isn’t set yet. Add the otcClientId row to the board sheet’s Config tab (see task J43).');return;}
+  startGIS();
+}).catch(function(){authFail('Couldn’t read the board config — refresh to try again.');});
+})();
+</script>
+</body>
+</html>
