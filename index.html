@@ -251,7 +251,6 @@ var SHORT={listings:'Listings',presence:'Presence',convert:'Convert',ops:'System
 var PRIO_LABEL={1:'Do first',2:'This week',3:'When you can'};
 var CONFIG={apiUrl:'',projectId:'',contextTemplate:''};
 var DATA={tasks:[],activity:[],notes:[]};
-var EXPLAINS={}; /* task id -> "Why: ...\n\nHow: ..." — from explains.json (repo) or an `explain` column in the sheet */
 var TAB='todo', CAT='listings';
 
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -481,8 +480,8 @@ function drawNotes(){
 
 /* ---------- explain popup ---------- */
 function explainText(t){
-  var s=(t.explain&&String(t.explain).trim())||EXPLAINS[t.id]||'';
-  return String(s).trim();
+  /* the `explain` column in the Tasks sheet is the single source of truth */
+  return String(t.explain||'').trim();
 }
 function openExplain(id){
   var t=byId(id);if(!t)return;
@@ -643,14 +642,12 @@ function loadData(first){
     fetchRows('Config').catch(function(){return [];}),
     fetchTab('Tasks','id'),
     fetchTab('Activity','summary').catch(function(){return [];}),
-    fetchTab('Notes','note').catch(function(){return [];}),
-    fetch('explains.json').then(function(r){return r.ok?r.json():{};}).catch(function(){return {};})
+    fetchTab('Notes','note').catch(function(){return [];})
   ]).then(function(res){
     res[0].forEach(function(r){var k=String(r[0]||'').trim(),v=String(r[1]||'').trim();if(k&&CONFIG.hasOwnProperty(k))CONFIG[k]=v;});
     DATA.tasks=res[1];
     DATA.activity=res[2];
     DATA.notes=res[3];
-    EXPLAINS=res[4]||{};
     lastLoad=Date.now();
     if(first){
       /* open on the goal with the most tasks ready for Jen */
