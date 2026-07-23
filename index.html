@@ -74,6 +74,12 @@
   .chip.ai{background:var(--blue-bg);color:var(--blue)}
   .askclaude{display:inline-block;color:#b0602f;background:#faf3ec;border:1px solid #ecd9c8;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;text-decoration:none;margin-left:2px}
   .askclaude:hover{background:#b0602f;color:#fff;border-color:#b0602f}
+  .autobtn{display:inline-block;font-family:inherit;color:#2e5c38;background:#e9f2ea;border:1px solid #b7d3bc;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;text-decoration:none;cursor:pointer;margin-left:2px}
+  .autobtn:hover{background:var(--sage);color:#fff;border-color:var(--sage)}
+  .autoact{display:inline-block;background:var(--sage);color:#fff;border:none;border-radius:20px;padding:10px 24px;font-size:14px;letter-spacing:1px;text-decoration:none;font-family:inherit;cursor:pointer}
+  .autoact:hover{background:#48624b}
+  .promptbox{background:#fdfcf9;border:1px solid #e3ddd0;border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.6;color:#4c4642;white-space:pre-wrap;word-break:break-word;max-height:230px;overflow-y:auto;margin-bottom:12px}
+  .autometa{font-size:12.5px;color:var(--muted);margin-bottom:10px}
   .explainbtn{display:inline-block;font-family:inherit;color:#4a6a86;background:#eef3f8;border:1px solid #d5e0ea;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;margin-left:2px}
   .explainbtn:hover{background:#4a6a86;color:#fff;border-color:#4a6a86}
   .linkchip{display:inline-block;color:var(--blue);background:var(--blue-bg);border:1px solid #cddcf0;border-radius:10px;padding:0 8px;font-size:12px;text-decoration:none;white-space:nowrap;vertical-align:baseline}
@@ -188,6 +194,7 @@
       Two kinds of tasks: <b>JEN</b> (you do it &mdash; tap the circle when done) and <b>AI</b> (the worker picks it up automatically once unblocked).
       The gold &#9889; badge shows how many tasks &mdash; Claude&rsquo;s and yours &mdash; finishing that one unlocks down the chain; the biggest unlockers sort to the top. The worker runs hourly and never sends, publishes, or spends without your approval.
       Not sure why a task is on the list? Tap <b>Explain this</b> on any card for the why and the how.
+      A green <b>Automation solution proposed</b> button means your automation scout found a shortcut &mdash; tap it for a ready-made prompt, call, text, or email.
     </footer>
   </div>
 </div>
@@ -227,6 +234,15 @@
       <a class="askclaude" id="exClaude" target="_blank" rel="noopener" style="display:none">Do it with Claude</a>
       <button class="send" id="exClose">Got it</button>
     </div>
+  </div>
+</div>
+
+<div class="overlay" id="autoOverlay">
+  <div class="modal exmodal">
+    <div class="exid" id="autoId"></div>
+    <h2 id="autoTitle"></h2>
+    <div id="autoBody"></div>
+    <div class="actions" id="autoActions"></div>
   </div>
 </div>
 
@@ -371,6 +387,61 @@ function claudeUrl(t){
   return 'https://claude.ai/new?q='+encodeURIComponent(prompt)+(CONFIG.projectId?'&project='+encodeURIComponent(CONFIG.projectId):'');
 }
 
+/* ---------- automation proposals (the `automation` column) ----------
+   JSON written by the hourly automation-scout worker. Kinds:
+   claude (prompt for a project chat) · call/sms/email (one direct action,
+   business contacts only — never client info) · manual (reviewed, Jen-only:
+   the card keeps its normal "Do it with Claude" link). */
+function autoFor(t){
+  var s=String(t.automation||'').trim();
+  if(!s)return null;
+  var a;try{a=JSON.parse(s);}catch(e){return null;}
+  if(!a||!a.kind||a.kind==='manual')return null;
+  if(a.kind==='claude'&&!a.prompt)return null;
+  if((a.kind==='call'||a.kind==='sms'||a.kind==='email')&&!a.to)return null;
+  return a;
+}
+function projectChatUrl(prompt){
+  return 'https://claude.ai/new?q='+encodeURIComponent(prompt||'')
+    +(CONFIG.projectId?'&project='+encodeURIComponent(CONFIG.projectId):'');
+}
+function openAuto(id){
+  var t=byId(id);if(!t)return;
+  var a=autoFor(t);if(!a)return;
+  document.getElementById('autoId').textContent=t.id+' · Automation proposed · '+(CATS[t.category]||t.category);
+  document.getElementById('autoTitle').textContent=t.title;
+  var body='<p>'+rich(a.summary||'Your AI worker found a way to automate this.')+'</p>';
+  var act='';
+  if(a.kind==='call'){
+    body+='<div class="autometa">Calls '+esc(a.label||a.to)+(a.label?' · '+esc(a.to):'')+'</div>';
+    act='<a class="autoact" href="tel:'+escA(String(a.to).replace(/[^+\d]/g,''))+'">&#9743;&nbsp;Call</a>';
+  } else if(a.kind==='sms'){
+    body+='<div class="autometa">Text to '+esc(a.label||a.to)+'</div>';
+    if(a.body)body+='<div class="promptbox">'+esc(a.body)+'</div>';
+    act='<a class="autoact" href="sms:'+escA(String(a.to).replace(/[^+\d]/g,''))+'?&body='+encodeURIComponent(a.body||'')+'">&#128172;&nbsp;Send Text</a>';
+  } else if(a.kind==='email'){
+    body+='<div class="autometa">To: '+esc(a.to)+(a.subject?' · Subject: '+esc(a.subject):'')+'</div>';
+    if(a.body)body+='<div class="promptbox">'+esc(a.body)+'</div>';
+    act='<a class="autoact" href="mailto:'+escA(a.to)+'?subject='+encodeURIComponent(a.subject||'')+'&body='+encodeURIComponent(a.body||'')+'">&#9993;&nbsp;Send Email</a>';
+  } else {
+    body+='<div class="promptbox">'+esc(a.prompt)+'</div>';
+    act='<button class="cancel" id="autoCopy">Copy prompt</button>'
+       +'<a class="autoact" target="_blank" rel="noopener" href="'+escA(projectChatUrl(a.prompt))+'">Finish it with Claude</a>';
+  }
+  document.getElementById('autoBody').innerHTML=body;
+  document.getElementById('autoActions').innerHTML='<button class="cancel" id="autoCloseBtn">Close</button>'+act;
+  document.getElementById('autoCloseBtn').addEventListener('click',function(){document.getElementById('autoOverlay').classList.remove('show');});
+  var cp=document.getElementById('autoCopy');
+  if(cp)cp.addEventListener('click',function(){
+    var txt=a.prompt||'';
+    var done=function(){toast('Prompt copied — paste it into your Nook project chat.');};
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(done,function(){toast('Couldn’t copy — select the text instead.');});
+    else{var ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done();}catch(e){toast('Couldn’t copy — select the text instead.');}document.body.removeChild(ta);}
+  });
+  document.getElementById('autoOverlay').classList.add('show');
+}
+document.getElementById('autoOverlay').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
+
 function linkify(s){
   return esc(s).replace(/(https?:\/\/[^\s]+)/g,function(u){return '<a href="'+escA(u)+'" target="_blank" rel="noopener">view</a>';});
 }
@@ -396,7 +467,12 @@ function taskHtml(t,mode){
   var onClaude=(mode==='waiting')&&isOnClaude(t);
   var cls='task'+(isDone(t)?' done':'')+(t.priority==='1'?' p1':'')+(mode==='waiting'?(onClaude?' waiting onclaude':' waiting'):'');
   var chips='<span class="chip '+(t.type==='ai'?'ai':'jen')+'">'+(t.type==='ai'?'AI':'JEN')+'</span>'+esc(t.id);
-  var ask=(!isDone(t)&&t.type==='jen')?' <a class="askclaude" target="_blank" rel="noopener" href="'+escA(claudeUrl(t))+'">Do it with Claude</a>':'';
+  var ask='';
+  if(!isDone(t)&&t.type==='jen'){
+    ask=autoFor(t)
+      ?' <button class="autobtn" data-auto="'+escA(t.id)+'">Automation solution proposed</button>'
+      :' <a class="askclaude" target="_blank" rel="noopener" href="'+escA(claudeUrl(t))+'">Do it with Claude</a>';
+  }
   var expl=' <button class="explainbtn" data-explain="'+escA(t.id)+'">Explain this</button>';
   var wait='';
   if(mode==='waiting'){
@@ -520,7 +596,17 @@ function openExplain(id){
       +'</p><p>Ask Claude in any chat to “explain task '+esc(t.id)+'” and it’ll write one onto the board.</p>';
   }
   var a=document.getElementById('exClaude');
-  if(!isDone(t)&&t.type==='jen'){a.href=claudeUrl(t);a.style.display='inline-block';}
+  var auto=(!isDone(t)&&t.type==='jen')?autoFor(t):null;
+  if(auto){
+    a.textContent='Automation solution proposed';a.className='autobtn';
+    a.removeAttribute('href');a.removeAttribute('target');
+    a.onclick=function(ev){ev.preventDefault();document.getElementById('exOverlay').classList.remove('show');openAuto(t.id);};
+    a.style.display='inline-block';
+  } else if(!isDone(t)&&t.type==='jen'){
+    a.textContent='Do it with Claude';a.className='askclaude';
+    a.href=claudeUrl(t);a.setAttribute('target','_blank');a.onclick=null;
+    a.style.display='inline-block';
+  }
   else a.style.display='none';
   document.getElementById('exOverlay').classList.add('show');
 }
@@ -531,6 +617,8 @@ document.getElementById('exOverlay').addEventListener('click',function(e){if(e.t
 document.getElementById('tabbody').addEventListener('click',function(e){
   var x=e.target.closest('[data-explain]');
   if(x){openExplain(x.getAttribute('data-explain'));return;}
+  var au=e.target.closest('[data-auto]');
+  if(au){openAuto(au.getAttribute('data-auto'));return;}
   var d=e.target.closest('[data-done]');
   if(d){markDone(d.getAttribute('data-done'));return;}
   var u=e.target.closest('[data-undo]');
