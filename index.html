@@ -155,6 +155,26 @@
     .tabs button{flex:1 1 50%;font-size:12px;letter-spacing:.5px;padding:10px 0;min-width:0;border-bottom:3px solid var(--line);margin-bottom:0}
     .count{padding:0 5px;font-size:10px;margin-left:3px}
   }
+  /* v2.8 touch sizing — phones & tablets get thumb-size tap targets; desktop unchanged */
+  @media (max-width:600px),(pointer:coarse){
+    button,.askclaude,.linkchip,.backlink a{touch-action:manipulation}
+    .backlink a{padding:9px 16px;font-size:13.5px}
+    .tabs button{padding:13px 2px;font-size:13px}
+    .count{font-size:11px}
+    .subtabs button{padding:9px 18px;font-size:13.5px;border-radius:20px;margin:4px 3px}
+    .task .box{flex:0 0 30px;height:30px}
+    .task .box:before{content:'';position:absolute;inset:-7px;border-radius:50%}
+    .task.done .box:after{top:2px;left:7px;font-size:17px}
+    .task.waiting .box:after{top:6px;left:7px;font-size:12px}
+    .task.onclaude .box:after{top:-1px;left:5px;font-size:16px}
+    .task .meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:9px}
+    .chip{margin-right:0;padding:2px 10px;font-size:11px}
+    .explainbtn,.askclaude,.autobtn,.notebtn{margin-left:0;padding:9px 15px;font-size:12.5px;border-radius:20px}
+    .autobtn{font-size:12px;letter-spacing:.3px;padding:9px 13px;text-align:center}
+    .task .blockrow{gap:8px;margin-top:9px}
+    .blockedby{padding:9px 15px;font-size:12.5px;border-radius:20px}
+    .task .undo{font-size:13px;padding:6px 4px}
+  }
 </style>
 </head>
 <body>
