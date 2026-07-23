@@ -2,15 +2,23 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="theme-color" content="#c3233d">
+<meta name="theme-color" content="#faf8f4">
 <meta name="apple-mobile-web-app-title" content="Nook Board">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="favicon.png">
 <title>Nook Listing Engine — Task Board</title>
 <style>
   :root{--nook:#c3233d;--nook-d:#8f1a2d;--ink:#221f1f;--muted:#8a827c;--cream:#faf8f4;--card:#ffffff;--line:#f0ebe2;--gold:#c9a86a;--sage:#5a7a5e;--blue:#3f6fae;--blue-bg:#e8eef7;}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Georgia','Times New Roman',serif;background:var(--cream);color:var(--ink);padding:32px 20px}
+  html{-webkit-text-size-adjust:100%}
+  body{font-family:'Georgia','Times New Roman',serif;background:var(--cream);color:var(--ink);-webkit-tap-highlight-color:transparent;
+    padding:calc(32px + env(safe-area-inset-top,0px)) calc(20px + env(safe-area-inset-right,0px)) calc(32px + env(safe-area-inset-bottom,0px)) calc(20px + env(safe-area-inset-left,0px))}
   .wrap{max-width:720px;margin:0 auto}
   header{text-align:center;margin-bottom:12px}
   header .logo{height:56px;display:block;margin:0 auto 10px}
@@ -89,9 +97,9 @@
   #status .steps{display:inline-block;text-align:left;background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin-top:14px;font-size:14px;line-height:1.8;color:var(--ink)}
   #content{display:none}
   footer{text-align:center;color:var(--muted);font-size:12px;margin-top:24px;line-height:1.6}
-  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:20px;padding:10px 24px;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:60;max-width:90vw;text-align:center}
+  .toast{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:20px;padding:10px 24px;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:60;max-width:90vw;text-align:center}
   .toast.show{opacity:1}
-  .fab{position:fixed;bottom:26px;right:26px;width:58px;height:58px;border-radius:50%;background:var(--nook);color:#fff;border:none;font-size:30px;line-height:1;cursor:pointer;box-shadow:0 4px 14px rgba(143,26,45,.35);z-index:40;font-family:inherit}
+  .fab{position:fixed;bottom:calc(26px + env(safe-area-inset-bottom,0px));right:calc(26px + env(safe-area-inset-right,0px));width:58px;height:58px;border-radius:50%;background:var(--nook);color:#fff;border:none;font-size:30px;line-height:1;cursor:pointer;box-shadow:0 4px 14px rgba(143,26,45,.35);z-index:40;font-family:inherit}
   .fab:hover{background:var(--nook-d)}
   .overlay{position:fixed;inset:0;background:rgba(34,31,31,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
   .overlay.show{display:flex}
@@ -466,27 +474,40 @@ function showSetup(){
   s.innerHTML='Almost there — the board can’t read its Google Sheet yet.'
     +'<div class="steps"><b>One click fixes it:</b><br>Open the Board Sheet (link above) → Share → General access: <b>Anyone with the link</b> → Viewer → Done.<br>Then refresh this page.</div>';
 }
-Promise.all([
-  fetchRows('Config').catch(function(){return [];}),
-  fetchTab('Tasks','id'),
-  fetchTab('Activity','summary').catch(function(){return [];}),
-  fetchTab('Notes','note').catch(function(){return [];})
-]).then(function(res){
-  res[0].forEach(function(r){var k=String(r[0]||'').trim(),v=String(r[1]||'').trim();if(k&&CONFIG.hasOwnProperty(k))CONFIG[k]=v;});
-  DATA.tasks=res[1];
-  DATA.activity=res[2];
-  DATA.notes=res[3];
-  /* open on the goal with the most tasks ready for Jen */
-  var best=CAT,bestN=-1;
-  Object.keys(CATS).forEach(function(k){
-    var n=DATA.tasks.filter(function(t){return t.category===k&&t.type==='jen'&&isReady(t);}).length;
-    if(n>bestN){bestN=n;best=k;}
+var lastLoad=0;
+function loadData(first){
+  return Promise.all([
+    fetchRows('Config').catch(function(){return [];}),
+    fetchTab('Tasks','id'),
+    fetchTab('Activity','summary').catch(function(){return [];}),
+    fetchTab('Notes','note').catch(function(){return [];})
+  ]).then(function(res){
+    res[0].forEach(function(r){var k=String(r[0]||'').trim(),v=String(r[1]||'').trim();if(k&&CONFIG.hasOwnProperty(k))CONFIG[k]=v;});
+    DATA.tasks=res[1];
+    DATA.activity=res[2];
+    DATA.notes=res[3];
+    lastLoad=Date.now();
+    if(first){
+      /* open on the goal with the most tasks ready for Jen */
+      var best=CAT,bestN=-1;
+      Object.keys(CATS).forEach(function(k){
+        var n=DATA.tasks.filter(function(t){return t.category===k&&t.type==='jen'&&isReady(t);}).length;
+        if(n>bestN){bestN=n;best=k;}
+      });
+      CAT=best;
+      document.getElementById('status').style.display='none';
+      document.getElementById('content').style.display='block';
+    }
+    draw();drawNotes();
   });
-  CAT=best;
-  document.getElementById('status').style.display='none';
-  document.getElementById('content').style.display='block';
-  draw();drawNotes();
-}).catch(function(){showSetup();});
+}
+loadData(true).catch(function(){showSetup();});
+/* app mode: silently re-fetch the board when it comes back to the foreground */
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='visible'&&Date.now()-lastLoad>60000){
+    loadData(false).catch(function(){/* keep showing what we have */});
+  }
+});
 })();
 </script>
 </body>
