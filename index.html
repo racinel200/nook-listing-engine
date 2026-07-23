@@ -143,6 +143,9 @@
   .chip.lead-now{background:#e9f2ea;color:#2e5c38}
   .leadcall{display:inline-block;font-family:inherit;color:#2e5c38;background:#e9f2ea;border:1px solid #b7d3bc;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;text-decoration:none;cursor:pointer}
   .leadcall:hover{background:var(--sage);color:#fff;border-color:var(--sage)}
+  .leaddismiss{display:inline-block;font-family:inherit;color:var(--muted);background:#f6f2ea;border:1px solid #e8e1d3;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;margin-left:auto}
+  .leaddismiss:hover{color:var(--nook-d);border-color:#eecdd4;background:#fbf1f3}
+  .leaddismiss.armed{background:var(--nook);border-color:var(--nook);color:#fff}
   .lead .detail{display:none;font-size:13.5px;color:#5c554f;line-height:1.55;margin-top:7px;background:#fdfcf9;border:1px solid #efe9dd;border-radius:10px;padding:10px 12px}
   .lead.open .detail{display:block}
   .lead .detail b{color:var(--nook-d);font-weight:normal;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;display:block;margin:8px 0 2px}
@@ -197,7 +200,7 @@
     .task .blockrow{gap:8px;margin-top:9px}
     .blockedby{padding:9px 15px;font-size:12.5px;border-radius:20px}
     .lead .meta{gap:8px;margin-top:9px}
-    .leadcall,.lead .linkchip{padding:9px 15px;font-size:12.5px;border-radius:20px}
+    .leadcall,.lead .linkchip,.leaddismiss{padding:9px 15px;font-size:12.5px;border-radius:20px}
     .task .undo{font-size:13px;padding:6px 4px}
   }
 </style>
@@ -598,7 +601,11 @@ function drawNotes(){
 /* ---------- Listing Leads (All Leads tab, CONTACT NOW tier only) ----------
    The daily seller-lead hunt writes verified leads to the "All Leads" tab.
    Only CONTACT NOW rows (true FSBOs / confirmed expired-withdrawn — safe to
-   reach out to) are shown here. Watch/monitor rows never render on the site. */
+   reach out to) are shown here. Watch/monitor rows never render on the site.
+   A lead disappears when (a) Jen taps ✕ Remove — the lead_dismiss API action
+   re-tiers the row to DISMISSED (row stays in the sheet so the daily hunt's
+   dedupe still sees it) — or (b) its "Sent to FUB?" cell flips to Yes. */
+var LEADS_NOW=[];
 function leadPhone(s){var m=String(s||'').match(/\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}/);return m?m[0]:'';}
 function leadHtml(l,i){
   var phone=leadPhone(l['listed by']);
@@ -616,20 +623,48 @@ function leadHtml(l,i){
   return '<div class="lead" data-lead="'+i+'">'
     +'<div class="addr" data-leadopen="'+i+'">'+esc(l.address||'')+'</div>'
     +'<div class="sub">'+(area?esc(area)+' &middot; ':'')+(price?'<b>'+esc(price)+'</b>':'')+(signal?' &middot; '+esc(signal):'')+'</div>'
-    +'<div class="meta"><span class="chip lead-now">Contact now</span>'+call+srcChip+'</div>'
+    +'<div class="meta"><span class="chip lead-now">Contact now</span>'+call+srcChip
+    +'<button class="leaddismiss" data-dismiss="'+i+'">&#10005; Remove</button></div>'
     +(d?'<div class="detail">'+d+'</div>':'')
     +'</div>';
 }
 function drawLeads(){
   var panel=document.getElementById('leadsPanel');
   if(!DATA.leads.length){panel.style.display='none';return;}
-  var now=DATA.leads.filter(function(l){return String(l.tier||'').trim().toUpperCase()==='CONTACT NOW';});
+  LEADS_NOW=DATA.leads.filter(function(l){
+    return String(l.tier||'').trim().toUpperCase()==='CONTACT NOW'
+      && String(l['sent to fub?']||'').trim().toLowerCase().charAt(0)!=='y'
+      && !l._dismissed;
+  });
   panel.style.display='block';
-  document.getElementById('leadlist').innerHTML=now.length
-    ?now.map(leadHtml).join('')
+  document.getElementById('leadlist').innerHTML=LEADS_NOW.length
+    ?LEADS_NOW.map(leadHtml).join('')
     :'<p class="empty">No contact-ready leads right now &mdash; the daily hunt keeps looking.</p>';
 }
+/* ✕ Remove is two-tap: first tap arms the button ("Tap again to remove"),
+   second tap within 3s dismisses. Optimistic UI with revert on API failure. */
+function dismissLead(i){
+  var l=LEADS_NOW[i];if(!l)return;
+  if(!CONFIG.apiUrl){needApi();return;}
+  l._dismissed=true;drawLeads();
+  toast('Lead removed — it stays in the sheet as DISMISSED.');
+  call({action:'lead_dismiss',rank:l.rank||'',address:l.address||''}).then(function(r){
+    if(!r.ok)throw new Error(r.error||'failed');
+  }).catch(function(){
+    l._dismissed=false;drawLeads();
+    toast('Couldn\u2019t remove it \u2014 the board\u2019s Apps Script needs the v7 update (see your Systems tab).');
+  });
+}
 document.getElementById('leadlist').addEventListener('click',function(e){
+  var x=e.target.closest('[data-dismiss]');
+  if(x){
+    if(x.classList.contains('armed')){dismissLead(parseInt(x.getAttribute('data-dismiss'),10));}
+    else{
+      x.classList.add('armed');x.innerHTML='Tap again to remove';
+      setTimeout(function(){if(x&&x.isConnected){x.classList.remove('armed');x.innerHTML='&#10005; Remove';}},3000);
+    }
+    return;
+  }
   var o=e.target.closest('[data-leadopen]');
   if(o){o.closest('.lead').classList.toggle('open');}
 });
