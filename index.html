@@ -20,6 +20,15 @@
   body{font-family:'Georgia','Times New Roman',serif;background:var(--cream);color:var(--ink);-webkit-tap-highlight-color:transparent;
     padding:calc(32px + env(safe-area-inset-top,0px)) calc(20px + env(safe-area-inset-right,0px)) calc(32px + env(safe-area-inset-bottom,0px)) calc(20px + env(safe-area-inset-left,0px))}
   .wrap{max-width:720px;margin:0 auto}
+  /* v2.10 two-column desktop: board left, Listing Leads right; stacks below 941px */
+  .cols{display:flex;gap:22px;align-items:flex-start}
+  #mainPanel{flex:1 1 0;min-width:0}
+  #leadsPanel{flex:0 0 340px;min-width:0}
+  @media (min-width:941px){
+    .wrap{max-width:1104px}
+    #notePanel,footer{max-width:720px;margin-left:auto;margin-right:auto}
+  }
+  @media (max-width:940px){.cols{display:block}}
   header{text-align:center;margin-bottom:12px}
   header .logo{height:56px;display:block;margin:0 auto 10px}
   header .logotext{display:none;font-size:26px;letter-spacing:3px;color:var(--nook);text-transform:uppercase;margin-bottom:8px}
@@ -214,7 +223,8 @@
   <div id="status">Loading your board&hellip;</div>
 
   <div id="content">
-    <div class="panel">
+    <div class="cols">
+    <div class="panel" id="mainPanel">
       <div class="tabs" id="goaltabs"></div>
       <div class="tablegend">Numbers: <span class="count">your move</span> &middot; <span class="count wait">waiting on Claude</span></div>
       <div class="goalhead" id="goalhead"></div>
@@ -232,8 +242,9 @@
       <p class="leadsub">Sellers you can reach out to <b>today</b> &mdash; verified by your daily lead hunt. Tap an address for the full story. Always DNC-check before calling.</p>
       <div id="leadlist"></div>
     </div>
+    </div>
 
-    <div class="panel">
+    <div class="panel" id="notePanel">
       <h2>Leave a note for your AI worker</h2>
       <textarea id="notebox" placeholder="Anything on your mind &mdash; answer a question, redirect a task, share news. The worker reads it on its next hourly run."></textarea>
       <div class="sendrow">
