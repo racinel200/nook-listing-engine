@@ -148,6 +148,13 @@
   .leaddismiss{display:inline-block;font-family:inherit;color:var(--muted);background:#f6f2ea;border:1px solid #e8e1d3;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;margin-left:auto}
   .leadpkg{display:inline-block;font-family:inherit;color:#c3233d;background:#fbeaed;border:1px solid #eec3ca;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;text-decoration:none;cursor:pointer;font-weight:600}
   .leadpkg:hover{background:#c3233d;color:#fff;border-color:#c3233d}
+  .leadfub{display:inline-block;font-family:inherit;color:#2a5b8f;background:#eaf1f9;border:1px solid #c2d4e8;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;text-decoration:none;cursor:pointer}
+  a.leadfub:hover{background:#2a5b8f;color:#fff;border-color:#2a5b8f}
+  .leadwt{display:inline-block;font-family:inherit;color:#5b3e8f;background:#f1ecfa;border:1px solid #d4c8ea;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;text-decoration:none;cursor:pointer}
+  .leadwt:hover{background:#5b3e8f;color:#fff;border-color:#5b3e8f}
+  .leadwt.armed{background:var(--nook);border-color:var(--nook);color:#fff}
+  .leadwt.queued{cursor:default;opacity:.75}
+  .leadwt.queued:hover{background:#f1ecfa;color:#5b3e8f;border-color:#d4c8ea}
   .leaddismiss:hover{color:var(--nook-d);border-color:#eecdd4;background:#fbf1f3}
   .leaddismiss.armed{background:var(--nook);border-color:var(--nook);color:#fff}
   .lead .detail{display:none;font-size:13.5px;color:#5c554f;line-height:1.55;margin-top:7px;background:#fdfcf9;border:1px solid #efe9dd;border-radius:10px;padding:10px 12px}
@@ -204,7 +211,7 @@
     .task .blockrow{gap:8px;margin-top:9px}
     .blockedby{padding:9px 15px;font-size:12.5px;border-radius:20px}
     .lead .meta{gap:8px;margin-top:9px}
-    .leadcall,.lead .linkchip,.leaddismiss,.leadpkg{padding:9px 15px;font-size:12.5px;border-radius:20px}
+    .leadcall,.lead .linkchip,.leaddismiss,.leadpkg,.leadfub,.leadwt{padding:9px 15px;font-size:12.5px;border-radius:20px}
     .task .undo{font-size:13px;padding:6px 4px}
   }
 </style>
@@ -606,9 +613,12 @@ function drawNotes(){
    The daily seller-lead hunt writes verified leads to the "All Leads" tab.
    Only CONTACT NOW rows (true FSBOs / confirmed expired-withdrawn — safe to
    reach out to) are shown here. Watch/monitor rows never render on the site.
-   A lead disappears when (a) Jen taps ✕ Remove — the lead_dismiss API action
+   A lead disappears only when Jen taps ✕ Remove — the lead_dismiss API action
    re-tiers the row to DISMISSED (row stays in the sheet so the daily hunt's
-   dedupe still sees it) — or (b) its "Sent to FUB?" cell flips to Yes. */
+   dedupe still sees it). Since v2.13 a lead pushed to FUB stays visible with
+   an "In FUB ↗" chip (the "FUB Link" column); the daily hunt auto-pushes
+   CONTACT NOW leads, so hiding them would empty the panel. The 🎥 button
+   queues an AI walkthrough via walkthrough_request (Apps Script v10). */
 var LEADS_NOW=[];
 /* Seller proposal packages: a "package" column in the All Leads sheet wins;
    otherwise packages.json in this repo maps rank (C4) → its Drive folder. */
@@ -635,10 +645,20 @@ function leadHtml(l,i){
   if(String(l['suggested next step']||'').trim())d+='<b>Next step</b>'+rich(l['suggested next step']);
   var pkgUrl=leadPkgUrl(l);
   var pkgChip=pkgUrl?'<a class="leadpkg" href="'+escA(pkgUrl)+'" target="_blank" rel="noopener">&#128230; Proposal</a>':'';
+  var fubUrl=String(l['fub link']||'').trim();
+  var fubChip='';
+  if(/^https?:\/\//.test(fubUrl))fubChip='<a class="leadfub" href="'+escA(fubUrl)+'" target="_blank" rel="noopener">In FUB &#8599;</a>';
+  else if(String(l['sent to fub?']||'').trim().toLowerCase().charAt(0)==='y')fubChip='<span class="leadfub">In FUB</span>';
+  var wt=String(l['walkthrough']||'').trim();
+  var wtm=wt.match(/https?:\/\/\S+/);
+  var wtBtn;
+  if(wtm)wtBtn='<a class="leadwt" href="'+escA(wtm[0])+'" target="_blank" rel="noopener">&#127909; Walkthrough &#8599;</a>';
+  else if(wt)wtBtn='<span class="leadwt queued">&#127909; Queued</span>';
+  else wtBtn='<button class="leadwt" data-wt="'+i+'">&#127909; Walkthrough</button>';
   return '<div class="lead" data-lead="'+i+'">'
     +'<div class="addr" data-leadopen="'+i+'">'+esc(l.address||'')+'</div>'
     +'<div class="sub">'+(area?esc(area)+' &middot; ':'')+(price?'<b>'+esc(price)+'</b>':'')+(signal?' &middot; '+esc(signal):'')+'</div>'
-    +'<div class="meta"><span class="chip lead-now">Contact now</span>'+call+pkgChip+srcChip
+    +'<div class="meta"><span class="chip lead-now">Contact now</span>'+call+pkgChip+fubChip+wtBtn+srcChip
     +'<button class="leaddismiss" data-dismiss="'+i+'">&#10005; Remove</button></div>'
     +(d?'<div class="detail">'+d+'</div>':'')
     +'</div>';
@@ -648,7 +668,6 @@ function drawLeads(){
   if(!DATA.leads.length){panel.style.display='none';return;}
   LEADS_NOW=DATA.leads.filter(function(l){
     return String(l.tier||'').trim().toUpperCase()==='CONTACT NOW'
-      && String(l['sent to fub?']||'').trim().toLowerCase().charAt(0)!=='y'
       && !l._dismissed;
   });
   panel.style.display='block';
@@ -670,7 +689,31 @@ function dismissLead(i){
     toast('Couldn\u2019t remove it \u2014 the board\u2019s Apps Script needs the v7 update (see your Systems tab).');
   });
 }
+/* 🎥 Walkthrough is two-tap like ✕ Remove: first tap arms, second within
+   3s queues the AI walkthrough task via walkthrough_request (Apps Script v10).
+   Optimistic UI: cell shows Queued instantly, reverts on API failure. */
+function requestWalkthrough(i){
+  var l=LEADS_NOW[i];if(!l)return;
+  if(!CONFIG.apiUrl){needApi();return;}
+  l['walkthrough']='Requested';drawLeads();
+  toast('Walkthrough queued — the AI builds it on its next run.');
+  call({action:'walkthrough_request',rank:l.rank||'',address:l.address||''}).then(function(r){
+    if(!r.ok)throw new Error(r.error||'failed');
+  }).catch(function(){
+    l['walkthrough']='';drawLeads();
+    toast('Couldn\u2019t queue it \u2014 the board\u2019s Apps Script needs the v10 update.');
+  });
+}
 document.getElementById('leadlist').addEventListener('click',function(e){
+  var w=e.target.closest('[data-wt]');
+  if(w){
+    if(w.classList.contains('armed')){requestWalkthrough(parseInt(w.getAttribute('data-wt'),10));}
+    else{
+      w.classList.add('armed');w.innerHTML='Tap again to queue';
+      setTimeout(function(){if(w&&w.isConnected){w.classList.remove('armed');w.innerHTML='&#127909; Walkthrough';}},3000);
+    }
+    return;
+  }
   var x=e.target.closest('[data-dismiss]');
   if(x){
     if(x.classList.contains('armed')){dismissLead(parseInt(x.getAttribute('data-dismiss'),10));}
