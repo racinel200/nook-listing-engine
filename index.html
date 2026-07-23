@@ -87,6 +87,8 @@
   .notebtn:hover{background:var(--nook);border-color:var(--nook);color:#fff}
   .task .tasknote{font-size:12.5px;color:#5c554f;margin-top:5px;background:#fbf7ef;border:1px solid #efe4d0;border-left:3px solid var(--gold);border-radius:8px;padding:7px 10px;line-height:1.5}
   .task .tasknote b{color:var(--nook-d);font-weight:normal;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:2px}
+  .task .unlocks{display:inline-block;font-size:11px;color:#8a6d2f;background:#fbf5e6;border:1px solid #eddcb2;border-radius:10px;padding:2px 10px;margin-top:5px;letter-spacing:.3px}
+  .task .unlocks b{color:#6f5620;font-weight:bold}
   .action{display:flex;gap:12px;padding:12px 6px;border-bottom:1px solid var(--line)}
   .action:last-child{border-bottom:none}
   .action .dot{flex:0 0 10px;height:10px;border-radius:50%;background:var(--blue);margin-top:7px}
@@ -179,7 +181,7 @@
 
     <footer id="footer">
       Two kinds of tasks: <b>JEN</b> (you do it &mdash; tap the circle when done) and <b>AI</b> (the worker picks it up automatically once unblocked).
-      Finishing a Jen task often unlocks new AI work. The worker runs hourly and never sends, publishes, or spends without your approval.
+      The gold &#9889; badge shows how many tasks &mdash; Claude&rsquo;s and yours &mdash; finishing that one unlocks down the chain; the biggest unlockers sort to the top. The worker runs hourly and never sends, publishes, or spends without your approval.
       Not sure why a task is on the list? Tap <b>Explain this</b> on any card for the why and the how.
     </footer>
   </div>
@@ -321,6 +323,42 @@ function noteFor(id){
   return found;
 }
 
+/* ---------- unlock counts ----------
+   For each task: how many not-yet-done tasks are stuck behind it, following the
+   whole dependency chain from the sheet's `deps` column (if J6 unlocks A14 and
+   A14 unlocks A20, J6 is holding up both). Counted separately for Claude (ai)
+   tasks and Jen tasks. Done tasks don't count and don't pass the chain along. */
+var UNLOCKS={};
+function computeUnlocks(){
+  UNLOCKS={};
+  var byDep={};
+  DATA.tasks.forEach(function(x){
+    if(isDone(x))return;
+    depsList(x).forEach(function(d){(byDep[d]=byDep[d]||[]).push(x);});
+  });
+  DATA.tasks.forEach(function(t){
+    var seen={},q=[t.id],ai=0,jen=0;
+    while(q.length){
+      var id=q.shift();
+      (byDep[id]||[]).forEach(function(x){
+        if(seen[x.id])return;seen[x.id]=1;
+        if(x.type==='ai')ai++;else jen++;
+        q.push(x.id);
+      });
+    }
+    UNLOCKS[t.id]={ai:ai,jen:jen};
+  });
+}
+function unlockBadge(t){
+  if(isDone(t)||t.type!=='jen')return '';
+  var u=UNLOCKS[t.id]||{ai:0,jen:0};
+  if(!u.ai&&!u.jen)return '';
+  var parts=[];
+  if(u.ai)parts.push('<b>'+u.ai+'</b> Claude action'+(u.ai>1?'s':''));
+  if(u.jen)parts.push('<b>'+u.jen+'</b> of your tasks');
+  return '<div class="unlocks" title="Finish this and these get unblocked">&#9889; Unlocks '+parts.join(' + ')+'</div>';
+}
+
 function claudeUrl(t){
   var tpl=CONFIG.contextTemplate||('Help me with this task from my Nook Realty board ({id}): {task} — {detail}');
   var prompt=tpl.replace(/\{task\}/g,t.title).replace(/\{detail\}/g,t.detail||'')
@@ -357,7 +395,7 @@ function taskHtml(t,mode){
   var noteShow=existing?'<div class="tasknote"><b>Your note for the AI worker</b>'+esc(existing.note)+'</div>':'';
   return '<div class="'+cls+'">'+box
     +'<div class="body"><div class="txt" data-open="'+escA(t.id)+'">'+esc(t.title)+'</div>'
-    +'<div class="meta">'+chips+expl+ask+noteBtn+'</div>'+wait+res+noteShow
+    +'<div class="meta">'+chips+expl+ask+noteBtn+'</div>'+unlockBadge(t)+wait+res+noteShow
     +(t.detail?'<div class="detail">'+esc(t.detail)+'</div>':'')
     +'</div>'+undo+'</div>';
 }
@@ -375,6 +413,7 @@ function drawGoalTabs(){
 }
 
 function draw(){
+  computeUnlocks();
   drawGoalTabs();
   var catTasks=DATA.tasks.filter(inCat);
   var doneCount=catTasks.filter(isDone).length;
@@ -389,6 +428,11 @@ function draw(){
     groups.forEach(function(g){
       var ts=jenReady.filter(function(t){return (t.priority||'2')===g[0];});
       if(!ts.length)return;
+      /* biggest unlockers float to the top within each priority group */
+      ts=ts.slice().sort(function(a,b){
+        var ua=UNLOCKS[a.id]||{ai:0,jen:0},ub=UNLOCKS[b.id]||{ai:0,jen:0};
+        return (ub.ai-ua.ai)||(ub.jen-ua.jen);
+      });
       shown+=ts.length;
       html+='<div class="prio-head '+g[1]+'">'+PRIO_LABEL[g[0]]+'</div>'+ts.map(function(t){return taskHtml(t,'ready');}).join('');
     });
