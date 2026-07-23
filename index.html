@@ -20,7 +20,8 @@
   body{font-family:'Georgia','Times New Roman',serif;background:var(--cream);color:var(--ink);-webkit-tap-highlight-color:transparent;
     padding:calc(32px + env(safe-area-inset-top,0px)) calc(20px + env(safe-area-inset-right,0px)) calc(32px + env(safe-area-inset-bottom,0px)) calc(20px + env(safe-area-inset-left,0px))}
   .wrap{max-width:720px;margin:0 auto}
-  /* v2.10 two-column desktop: board left, Listing Leads right; stacks below 941px */
+  /* v2.11 seller-proposal button on lead cards (package column or packages.json → Drive folder)
+     v2.10 two-column desktop: board left, Listing Leads right; stacks below 941px */
   .cols{display:flex;gap:22px;align-items:flex-start}
   #mainPanel{flex:1 1 0;min-width:0}
   #leadsPanel{flex:0 0 340px;min-width:0}
@@ -144,6 +145,8 @@
   .leadcall{display:inline-block;font-family:inherit;color:#2e5c38;background:#e9f2ea;border:1px solid #b7d3bc;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;text-decoration:none;cursor:pointer}
   .leadcall:hover{background:var(--sage);color:#fff;border-color:var(--sage)}
   .leaddismiss{display:inline-block;font-family:inherit;color:var(--muted);background:#f6f2ea;border:1px solid #e8e1d3;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;margin-left:auto}
+  .leadpkg{display:inline-block;font-family:inherit;color:#c3233d;background:#fbeaed;border:1px solid #eec3ca;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;text-decoration:none;cursor:pointer;font-weight:600}
+  .leadpkg:hover{background:#c3233d;color:#fff;border-color:#c3233d}
   .leaddismiss:hover{color:var(--nook-d);border-color:#eecdd4;background:#fbf1f3}
   .leaddismiss.armed{background:var(--nook);border-color:var(--nook);color:#fff}
   .lead .detail{display:none;font-size:13.5px;color:#5c554f;line-height:1.55;margin-top:7px;background:#fdfcf9;border:1px solid #efe9dd;border-radius:10px;padding:10px 12px}
@@ -200,7 +203,7 @@
     .task .blockrow{gap:8px;margin-top:9px}
     .blockedby{padding:9px 15px;font-size:12.5px;border-radius:20px}
     .lead .meta{gap:8px;margin-top:9px}
-    .leadcall,.lead .linkchip,.leaddismiss{padding:9px 15px;font-size:12.5px;border-radius:20px}
+    .leadcall,.lead .linkchip,.leaddismiss,.leadpkg{padding:9px 15px;font-size:12.5px;border-radius:20px}
     .task .undo{font-size:13px;padding:6px 4px}
   }
 </style>
@@ -606,6 +609,15 @@ function drawNotes(){
    re-tiers the row to DISMISSED (row stays in the sheet so the daily hunt's
    dedupe still sees it) — or (b) its "Sent to FUB?" cell flips to Yes. */
 var LEADS_NOW=[];
+/* Seller proposal packages: a "package" column in the All Leads sheet wins;
+   otherwise packages.json in this repo maps rank (C4) → its Drive folder. */
+var PACKAGES={};
+function leadPkgUrl(l){
+  var v=String(l['package']||'').trim();
+  if(/^https?:\/\//.test(v))return v;
+  var p=PACKAGES[String(l.rank||'').trim().toUpperCase()];
+  return (p&&p.folder)||'';
+}
 function leadPhone(s){var m=String(s||'').match(/\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}/);return m?m[0]:'';}
 function leadHtml(l,i){
   var phone=leadPhone(l['listed by']);
@@ -620,10 +632,12 @@ function leadHtml(l,i){
   if(String(l["why it's a lead (evidence)"]||'').trim())d+='<b>Why it&rsquo;s a lead</b>'+rich(l["why it's a lead (evidence)"]);
   if(String(l['contact rules today']||'').trim())d+='<b>Contact rules</b>'+rich(l['contact rules today']);
   if(String(l['suggested next step']||'').trim())d+='<b>Next step</b>'+rich(l['suggested next step']);
+  var pkgUrl=leadPkgUrl(l);
+  var pkgChip=pkgUrl?'<a class="leadpkg" href="'+escA(pkgUrl)+'" target="_blank" rel="noopener">&#128230; Proposal</a>':'';
   return '<div class="lead" data-lead="'+i+'">'
     +'<div class="addr" data-leadopen="'+i+'">'+esc(l.address||'')+'</div>'
     +'<div class="sub">'+(area?esc(area)+' &middot; ':'')+(price?'<b>'+esc(price)+'</b>':'')+(signal?' &middot; '+esc(signal):'')+'</div>'
-    +'<div class="meta"><span class="chip lead-now">Contact now</span>'+call+srcChip
+    +'<div class="meta"><span class="chip lead-now">Contact now</span>'+call+pkgChip+srcChip
     +'<button class="leaddismiss" data-dismiss="'+i+'">&#10005; Remove</button></div>'
     +(d?'<div class="detail">'+d+'</div>':'')
     +'</div>';
@@ -870,13 +884,15 @@ function loadData(first){
     fetchTab('Tasks','id'),
     fetchTab('Activity','summary').catch(function(){return [];}),
     fetchTab('Notes','note').catch(function(){return [];}),
-    fetchTab('All Leads','tier').catch(function(){return [];})
+    fetchTab('All Leads','tier').catch(function(){return [];}),
+    fetch('packages.json?v='+Date.now()).then(function(r){return r.ok?r.json():{};}).catch(function(){return {};})
   ]).then(function(res){
     res[0].forEach(function(r){var k=String(r[0]||'').trim(),v=String(r[1]||'').trim();if(k&&CONFIG.hasOwnProperty(k))CONFIG[k]=v;});
     DATA.tasks=res[1];
     DATA.activity=res[2];
     DATA.notes=res[3];
     DATA.leads=res[4];
+    PACKAGES=res[5]||{};
     lastLoad=Date.now();
     if(first){
       /* open on the goal with the most tasks ready for Jen */
