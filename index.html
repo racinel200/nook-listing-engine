@@ -83,6 +83,10 @@
   .modal.exmodal p b{color:var(--nook-d)}
   .modal.exmodal .actions{margin-top:8px}
   .task .undo{margin-left:auto;font-size:12px;color:var(--muted);border:none;background:none;cursor:pointer;font-family:inherit;text-decoration:underline;flex-shrink:0}
+  .notebtn{display:inline-block;font-family:inherit;color:var(--nook-d);background:#fbf1f3;border:1px solid #eecdd4;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;margin-left:2px}
+  .notebtn:hover{background:var(--nook);border-color:var(--nook);color:#fff}
+  .task .tasknote{font-size:12.5px;color:#5c554f;margin-top:5px;background:#fbf7ef;border:1px solid #efe4d0;border-left:3px solid var(--gold);border-radius:8px;padding:7px 10px;line-height:1.5}
+  .task .tasknote b{color:var(--nook-d);font-weight:normal;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:2px}
   .action{display:flex;gap:12px;padding:12px 6px;border-bottom:1px solid var(--line)}
   .action:last-child{border-bottom:none}
   .action .dot{flex:0 0 10px;height:10px;border-radius:50%;background:var(--blue);margin-top:7px}
@@ -219,6 +223,19 @@
   </div>
 </div>
 
+<div class="overlay" id="noteOverlay">
+  <div class="modal">
+    <h2 id="noteTitle">Add a note</h2>
+    <p style="font-size:12.5px;color:var(--muted);margin-top:4px" id="noteSub"></p>
+    <label>Your note</label>
+    <textarea id="noteText" maxlength="1500" placeholder="What did you do, what should the worker know? e.g. Roof was replaced in 2024 — mention it in the listing. The AI worker reads this on its next hourly run."></textarea>
+    <div class="actions">
+      <button class="cancel" id="noteCancel">Cancel</button>
+      <button class="send" id="noteSave">Save note</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -294,6 +311,15 @@ function waitingOn(t){return unmetDeps(t).map(function(d){var x=byId(d);return d
 function claudeDeps(t){return unmetDeps(t).filter(function(d){var x=byId(d);return x&&x.type==='ai';});}
 function isOnClaude(t){return t.type==='jen'&&!isDone(t)&&!depsMet(t)&&claudeDeps(t).length>0;}
 function inCat(t){return t.category===CAT;}
+/* latest note Jen left on a specific task (Notes rows tagged with this task id) */
+function noteFor(id){
+  var found=null;
+  for(var i=0;i<DATA.notes.length;i++){var n=DATA.notes[i];
+    if(n.by==='automation')continue;
+    if(String(n.taskid||'').trim()===String(id).trim())found=n;
+  }
+  return found;
+}
 
 function claudeUrl(t){
   var tpl=CONFIG.contextTemplate||('Help me with this task from my Nook Realty board ({id}): {task} — {detail}');
@@ -322,9 +348,16 @@ function taskHtml(t,mode){
   var res=(isDone(t)&&t.result)?'<div class="result">&rarr; '+linkify(t.result)+'</div>':'';
   var undo=(isDone(t)&&t.type==='jen'&&TAB==='done')?'<button class="undo" data-undo="'+escA(t.id)+'">undo</button>':'';
   var box=(mode==='waiting'||isDone(t))?'<span class="box"></span>':'<button class="box" data-done="'+escA(t.id)+'" title="Mark done"></button>';
+  /* note button: "Add a note" on Jen's tasks · "Edit note" on any done task.
+     the note reaches the AI worker tagged with this task id. */
+  var existing=noteFor(t.id);
+  var noteBtn='';
+  if(isDone(t)) noteBtn=' <button class="notebtn" data-note="'+escA(t.id)+'">&#9998; '+(existing?'Edit note':'Add a note')+'</button>';
+  else if(t.type==='jen') noteBtn=' <button class="notebtn" data-note="'+escA(t.id)+'">'+(existing?'&#9998; Edit note':'&#43; Add a note')+'</button>';
+  var noteShow=existing?'<div class="tasknote"><b>Your note for the AI worker</b>'+esc(existing.note)+'</div>':'';
   return '<div class="'+cls+'">'+box
     +'<div class="body"><div class="txt" data-open="'+escA(t.id)+'">'+esc(t.title)+'</div>'
-    +'<div class="meta">'+chips+expl+ask+'</div>'+wait+res
+    +'<div class="meta">'+chips+expl+ask+noteBtn+'</div>'+wait+res+noteShow
     +(t.detail?'<div class="detail">'+esc(t.detail)+'</div>':'')
     +'</div>'+undo+'</div>';
 }
@@ -437,6 +470,8 @@ document.getElementById('tabbody').addEventListener('click',function(e){
   if(d){markDone(d.getAttribute('data-done'));return;}
   var u=e.target.closest('[data-undo]');
   if(u){markUndo(u.getAttribute('data-undo'));return;}
+  var nt=e.target.closest('[data-note]');
+  if(nt){openNote(nt.getAttribute('data-note'));return;}
   var o=e.target.closest('[data-open]');
   if(o){o.closest('.task').classList.toggle('open');}
 });
@@ -480,6 +515,36 @@ document.getElementById('sendbtn').addEventListener('click',function(){
     DATA.notes.push({date:new Date().toISOString(),by:'jen',note:txt,status:'new'});
     box.value='';drawNotes();toast('Note sent — the worker reads it within the hour.');
   }).catch(function(){toast('Couldn’t send — try again.');}).then(function(){btn.disabled=false;});
+});
+
+/* per-task note modal */
+var noteTaskId=null;
+function openNote(id){
+  var t=byId(id);if(!t)return;
+  noteTaskId=id;
+  var existing=noteFor(id);
+  document.getElementById('noteTitle').textContent=existing?('Edit note — '+id):('Add a note — '+id);
+  document.getElementById('noteSub').textContent=t.title;
+  document.getElementById('noteText').value=existing?existing.note:'';
+  document.getElementById('noteOverlay').classList.add('show');
+  document.getElementById('noteText').focus();
+}
+function closeNote(){document.getElementById('noteOverlay').classList.remove('show');noteTaskId=null;}
+document.getElementById('noteCancel').addEventListener('click',closeNote);
+document.getElementById('noteOverlay').addEventListener('click',function(e){if(e.target===this)closeNote();});
+document.getElementById('noteSave').addEventListener('click',function(){
+  var txt=document.getElementById('noteText').value.trim();
+  if(!txt){toast('Type a note first.');return;}
+  if(!noteTaskId)return;
+  if(!CONFIG.apiUrl){needApi();return;}
+  var id=noteTaskId,btn=this;btn.disabled=true;
+  call({action:'note',text:txt,by:'jen',taskId:id}).then(function(r){
+    if(!r.ok)throw new Error(r.error);
+    /* one note per task on the card: drop any prior note for this id, add the new one */
+    DATA.notes=DATA.notes.filter(function(n){return !(String(n.taskid||'').trim()===id&&n.by!=='automation');});
+    DATA.notes.push({date:new Date().toISOString(),by:'jen',note:txt,status:'new',taskid:id});
+    closeNote();draw();drawNotes();toast('Note saved for '+id+' — the worker reads it within the hour.');
+  }).catch(function(){toast('Couldn’t save that note — try again.');}).then(function(){btn.disabled=false;});
 });
 
 /* add-task modal */
