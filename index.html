@@ -76,8 +76,10 @@
   .askclaude:hover{background:#b0602f;color:#fff;border-color:#b0602f}
   .autobtn{display:inline-block;font-family:inherit;color:#2e5c38;background:#e9f2ea;border:1px solid #b7d3bc;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;text-decoration:none;cursor:pointer;margin-left:2px}
   .autobtn:hover{background:var(--sage);color:#fff;border-color:var(--sage)}
-  .autoact{display:inline-block;background:var(--sage);color:#fff;border:none;border-radius:20px;padding:10px 24px;font-size:14px;letter-spacing:1px;text-decoration:none;font-family:inherit;cursor:pointer}
-  .autoact:hover{background:#48624b}
+  .autoact{display:inline-block;background:#fff;color:var(--ink);border:1px solid #d8d0c4;border-radius:20px;padding:10px 24px;font-size:14px;letter-spacing:1px;text-decoration:none;font-family:inherit;cursor:pointer}
+  .autoact:hover{background:#f6f2ea;border-color:#c3bbab}
+  .closex{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;background:var(--nook);color:#fff;border:none;font-size:16px;line-height:1;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;padding:0;z-index:2}
+  .closex:hover{background:var(--nook-d)}
   .promptbox{background:#fdfcf9;border:1px solid #e3ddd0;border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.6;color:#4c4642;white-space:pre-wrap;word-break:break-word;max-height:230px;overflow-y:auto;margin-bottom:12px}
   .autometa{font-size:12.5px;color:var(--muted);margin-bottom:10px}
   .explainbtn{display:inline-block;font-family:inherit;color:#4a6a86;background:#eef3f8;border:1px solid #d5e0ea;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;margin-left:2px}
@@ -92,6 +94,10 @@
   .modal.exmodal p{font-size:14.5px;line-height:1.65;color:#4c4642;margin-bottom:12px}
   .modal.exmodal p b{color:var(--nook-d)}
   .modal.exmodal .actions{margin-top:8px}
+  /* In the explain popup, the automation/Claude button sits beside the big "Got it" pill —
+     render it as a matching pill so the two align instead of a tiny chip next to a button. */
+  .modal.exmodal .actions .autobtn,
+  .modal.exmodal .actions .askclaude{border-radius:20px;padding:10px 22px;font-size:13px;letter-spacing:.6px;margin-left:0}
   .task .undo{margin-left:auto;font-size:12px;color:var(--muted);border:none;background:none;cursor:pointer;font-family:inherit;text-decoration:underline;flex-shrink:0}
   .notebtn{display:inline-block;font-family:inherit;color:var(--nook-d);background:#fbf1f3;border:1px solid #eecdd4;border-radius:10px;padding:1px 9px;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;margin-left:2px}
   .notebtn:hover{background:var(--nook);border-color:var(--nook);color:#fff}
@@ -127,7 +133,7 @@
   .fab:hover{background:var(--nook-d)}
   .overlay{position:fixed;inset:0;background:rgba(34,31,31,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
   .overlay.show{display:flex}
-  .modal{background:var(--card);border-radius:16px;padding:26px;max-width:460px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+  .modal{position:relative;background:var(--card);border-radius:16px;padding:26px;max-width:460px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.25)}
   .modal h2{font-size:16px;color:var(--nook-d);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px}
   .modal label{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:14px 0 6px}
   .modal input[type=text]{width:100%;font-family:inherit;font-size:15px;padding:11px 12px;border:1px solid #e0d8ca;border-radius:10px;background:#fdfcf9}
@@ -239,6 +245,7 @@
 
 <div class="overlay" id="autoOverlay">
   <div class="modal exmodal">
+    <button class="closex" id="autoCloseX" aria-label="Close">&times;</button>
     <div class="exid" id="autoId"></div>
     <h2 id="autoTitle"></h2>
     <div id="autoBody"></div>
@@ -425,19 +432,11 @@ function openAuto(id){
     act='<a class="autoact" href="mailto:'+escA(a.to)+'?subject='+encodeURIComponent(a.subject||'')+'&body='+encodeURIComponent(a.body||'')+'">&#9993;&nbsp;Send Email</a>';
   } else {
     body+='<div class="promptbox">'+esc(a.prompt)+'</div>';
-    act='<button class="cancel" id="autoCopy">Copy prompt</button>'
-       +'<a class="autoact" target="_blank" rel="noopener" href="'+escA(projectChatUrl(a.prompt))+'">Finish it with Claude</a>';
+    act='<a class="autoact" target="_blank" rel="noopener" href="'+escA(projectChatUrl(a.prompt))+'">Finish it with Claude</a>';
   }
   document.getElementById('autoBody').innerHTML=body;
-  document.getElementById('autoActions').innerHTML='<button class="cancel" id="autoCloseBtn">Close</button>'+act;
-  document.getElementById('autoCloseBtn').addEventListener('click',function(){document.getElementById('autoOverlay').classList.remove('show');});
-  var cp=document.getElementById('autoCopy');
-  if(cp)cp.addEventListener('click',function(){
-    var txt=a.prompt||'';
-    var done=function(){toast('Prompt copied — paste it into your Nook project chat.');};
-    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(done,function(){toast('Couldn’t copy — select the text instead.');});
-    else{var ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done();}catch(e){toast('Couldn’t copy — select the text instead.');}document.body.removeChild(ta);}
-  });
+  document.getElementById('autoActions').innerHTML=act;
+  document.getElementById('autoCloseX').onclick=function(){document.getElementById('autoOverlay').classList.remove('show');};
   document.getElementById('autoOverlay').classList.add('show');
 }
 document.getElementById('autoOverlay').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
