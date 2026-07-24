@@ -42,6 +42,10 @@
   .card.done .box:after{content:'\2713';color:#fff;position:absolute;top:2px;left:7px;font-size:17px}
   .box.txwait{border-color:#e3dcd0;cursor:default}
   .box.txwait:after{content:'\1F4AC';font-size:12px;position:absolute;top:6px;left:6px;opacity:.55}
+  .batchbar{text-align:center;margin:2px 0 8px}
+  .batch{color:#2e5c38;background:#e9f2ea;border:1px solid #b7d3bc}
+  .batch.armed{background:var(--nook);border-color:var(--nook);color:#fff}
+  .batch:disabled{opacity:.55}
   .bodyc{flex:1;min-width:0}
   .ttl{font-size:15.5px;line-height:1.5;cursor:pointer}
   .sub{font-size:13px;color:#5c554f;margin-top:2px}
@@ -168,8 +172,12 @@ function draw(){
   document.getElementById('nP').textContent=live.filter(function(r){return r.status.toLowerCase()==='pending';}).length||'';
   var html='',sum='';
   if(TABX==='pending'){
-    html=pend.length?pend.map(card).join(''):'<p class="empty">Nothing waiting on you — Claude keeps watching Follow Up Boss.</p>';
-    sum='Tap a name to read the full message. The circle is your approval — nothing sends without it.';
+    var pendEmails=pend.filter(function(r){return (r.channel||'text').toLowerCase()==='email';});
+    var batch=pendEmails.length>=2
+      ?'<div class="batchbar"><button class="abtn batch" data-batch="'+escA(pendEmails.map(function(r){return r.id;}).join(','))+'">&#10003; Approve all '+pendEmails.length+' emails'+(FIL!=='all'?' ('+esc(FIL)+')':'')+'</button></div>'
+      :'';
+    html=pend.length?batch+pend.map(card).join(''):'<p class="empty">Nothing waiting on you — Claude keeps watching Follow Up Boss.</p>';
+    sum='Tap a name to read the full message. Emails: circle approves. Texts: Send Text does it all.';
   } else if(TABX==='done'){
     var d=vis.filter(function(r){var s=r.status.toLowerCase();return s==='approved'||s==='completed';}).sort(function(a,b){return (b.updated||'').localeCompare(a.updated||'');});
     html=d.length?d.map(card).join(''):'<p class="empty">Nothing approved yet.</p>';
@@ -219,7 +227,43 @@ document.getElementById('tabs').addEventListener('click',function(e){
 document.getElementById('pills').addEventListener('click',function(e){
   var b=e.target.closest('button');if(!b)return;FIL=b.getAttribute('data-f');draw();
 });
+/* batch approve: sequential ui_act calls (the script lock serializes anyway);
+   optimistic UI, per-row revert on failure, one summary toast at the end */
+function runBatch(btn,ids){
+  btn.disabled=true;btn.textContent='Approving…';
+  var okCount=0,fails=[];
+  var prev={};ids.forEach(function(id){var r=byId(id);if(r){prev[id]=r.status;r.status='approved';r.updated=new Date().toISOString();}});
+  draw();
+  var chain=Promise.resolve();
+  ids.forEach(function(id){
+    chain=chain.then(function(){return api({action:'ui_act',id:id,act:'approve'}).then(function(res){
+      if(res&&res.auth===false){throw {auth:true,error:res.error};}
+      if(!res||!res.ok){fails.push(id);var r=byId(id);if(r)r.status=prev[id];}
+      else okCount++;
+    });});
+  });
+  chain.then(function(){
+    draw();
+    toast(fails.length?('Approved '+okCount+' — '+fails.length+' didn’t save ('+fails.join(', ')+'). Try those again.')
+                      :('Approved '+okCount+' emails — they send on the next hourly run.'));
+  }).catch(function(e){
+    ids.forEach(function(id){var r=byId(id);if(r&&r.status==='approved'&&prev[id])r.status=prev[id];});
+    draw();
+    if(e&&e.auth)authFail(e.error||'Sign-in expired — sign in again.');
+    else toast('Couldn’t finish — try again.');
+  });
+}
 document.getElementById('list').addEventListener('click',function(e){
+  var bb=e.target.closest('[data-batch]');
+  if(bb){
+    var ids=bb.getAttribute('data-batch').split(',').filter(String);
+    if(bb.classList.contains('armed')){runBatch(bb,ids);}
+    else{
+      bb.classList.add('armed');bb.textContent='Tap again to approve '+ids.length;
+      setTimeout(function(){if(bb.isConnected&&!bb.disabled){bb.classList.remove('armed');bb.innerHTML='&#10003; Approve all '+ids.length+' emails';}},3000);
+    }
+    return;
+  }
   var s=e.target.closest('[data-sms]');
   if(s){act(s.getAttribute('data-sms'),'sent','Marked sent — your Messages app is opening.');return;}
   var tu=e.target.closest('[data-txundo]');
