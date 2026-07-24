@@ -86,6 +86,7 @@
     </div>
     <div id="load" style="display:none">Loading your queue&hellip;</div>
     <div id="app" style="display:none">
+      <div class="sum" id="who" style="margin:0 0 8px"></div>
       <div class="pills" id="pills"></div>
       <div class="tabs2" id="tabs">
         <button data-t="pending" class="active">To Approve<span class="count" id="nP"></span></button>
@@ -108,7 +109,7 @@
 var QAPI='https://script.google.com/macros/s/AKfycbxkBVBeAxqrgOHzPH-6q7UE2TyX7p_RHvQfKcIeQi8zPj40uHz3R4L59o4j7urzyEpR/exec';
 var BOARD_CONFIG='https://docs.google.com/spreadsheets/d/1UyL52RjajpVkHBBC9DnXEpWSAOxW0Jj-r2JU5K3qGM4/gviz/tq?tqx=out:csv&sheet=Config';
 var FUB='https://sprouthomes.followupboss.com/2/people/view/';
-var IDT='',ROWS=[],TABX='pending',FIL='all',CLIENT_ID='';
+var IDT='',ROWS=[],TABX='pending',FIL='all',CLIENT_ID='',ME='',ADMIN=false;
 
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function escA(s){return esc(s).replace(/"/g,'&quot;');}
@@ -126,7 +127,8 @@ function card(r){
   var st=r.status.toLowerCase(),em=(r.channel||'text').toLowerCase()==='email';
   var cls='card'+((st==='approved'||st==='completed')?' done':'')+(r.priority==='1'?' hi':'');
   var ttl=esc(r.name||'')+(em?(' — '+esc(r.subject||'')):(' — '+esc(String(r.message||'').slice(0,60))+(String(r.message||'').length>60?'…':'')));
-  var chips='<span class="chip '+(em?'em">✉ Email':'tx">💬 Text')+'</span>'+(r.trigger?'<span class="chip">'+esc(r.trigger)+'</span>':'');
+  var chips='<span class="chip '+(em?'em">✉ Email':'tx">💬 Text')+'</span>'+(r.trigger?'<span class="chip">'+esc(r.trigger)+'</span>':'')
+    +(ADMIN&&r.assignedto?'<span class="chip" style="background:#fbf5e6;color:#8a6d2f">'+esc(String(r.assignedto).split('@')[0])+'</span>':'');
   var fub=(r.fubpersonid&&r.fubpersonid!=='0')?'<a class="abtn fub" target="_blank" rel="noopener" href="'+FUB+escA(r.fubpersonid)+'">FUB ↗</a>':'';
   var smsHref='sms:'+escA(String(r.to||'').replace(/[^+\d]/g,''))+'?&body='+encodeURIComponent(r.message||'');
   var acts='',line='',undo='';
@@ -213,7 +215,8 @@ function loadQueue(first){
   return api({action:'ui_list'}).then(function(res){
     if(res&&res.auth===false){authFail(res.error||'Not authorized.');return;}
     if(!res||!res.ok){authFail(res&&res.error?res.error:'Couldn’t load the queue.');return;}
-    ROWS=res.rows||[];
+    ROWS=res.rows||[];ME=res.me||'';ADMIN=!!res.admin;
+    document.getElementById('who').textContent=ME?('Signed in as '+ME+(ADMIN?' · admin — seeing everyone’s queue':'')):'';
     document.getElementById('load').style.display='none';
     document.getElementById('app').style.display='block';
     loadQueue._t=Date.now();
