@@ -40,6 +40,8 @@
   .card.hi .box{border-color:var(--nook)}
   .card.done .box{background:var(--sage);border-color:var(--sage);cursor:default}
   .card.done .box:after{content:'\2713';color:#fff;position:absolute;top:2px;left:7px;font-size:17px}
+  .box.txwait{border-color:#e3dcd0;cursor:default}
+  .box.txwait:after{content:'\1F4AC';font-size:12px;position:absolute;top:6px;left:6px;opacity:.55}
   .bodyc{flex:1;min-width:0}
   .ttl{font-size:15.5px;line-height:1.5;cursor:pointer}
   .sub{font-size:13px;color:#5c554f;margin-top:2px}
@@ -70,7 +72,7 @@
 <div class="wrap">
   <header>
     <h1>One-Touch Correspondence</h1>
-    <p>Outreach Claude drafted from Follow Up Boss. Tap the circle to approve &mdash; emails send automatically within the hour from your Gmail; texts send from your phone with one tap. Nothing sends without your tap. <a href="./">&larr; back to the board</a></p>
+    <p>Outreach Claude drafted from Follow Up Boss. <b>Emails:</b> tap the circle to approve &mdash; they send automatically within the hour from your Gmail. <b>Texts:</b> just tap Send Text &mdash; one tap approves it, marks it sent, and opens Messages. Nothing sends without your tap. <a href="./">&larr; back to the board</a></p>
   </header>
   <div class="panel">
     <div id="gate">
@@ -122,22 +124,31 @@ function card(r){
   var ttl=esc(r.name||'')+(em?(' — '+esc(r.subject||'')):(' — '+esc(String(r.message||'').slice(0,60))+(String(r.message||'').length>60?'…':'')));
   var chips='<span class="chip '+(em?'em">✉ Email':'tx">💬 Text')+'</span>'+(r.trigger?'<span class="chip">'+esc(r.trigger)+'</span>':'');
   var fub=(r.fubpersonid&&r.fubpersonid!=='0')?'<a class="abtn fub" target="_blank" rel="noopener" href="'+FUB+escA(r.fubpersonid)+'">FUB ↗</a>':'';
+  var smsHref='sms:'+escA(String(r.to||'').replace(/[^+\d]/g,''))+'?&body='+encodeURIComponent(r.message||'');
   var acts='',line='',undo='';
   if(st==='pending'){
-    acts='<button class="abtn skip" data-skip="'+escA(r.id)+'">✕ Skip</button><button class="abtn defer" data-defer="'+escA(r.id)+'">Later</button>';
+    /* texts are one-tap: no approve circle — Send Text approves, marks sent, and opens Messages */
+    if(!em)acts='<a class="abtn smsbtn" data-sms="'+escA(r.id)+'" href="'+smsHref+'">💬 Send Text</a>';
+    acts+='<button class="abtn skip" data-skip="'+escA(r.id)+'">✕ Skip</button><button class="abtn defer" data-defer="'+escA(r.id)+'">Later</button>';
   } else if(st==='approved'){
     if(em)line='<div class="queue">⏳ Approved — sends within the hour from your Gmail.</div>';
     else{line='<div class="queue">⏳ Approved — tap Send Text to send it from your phone.</div>';
-      acts='<a class="abtn smsbtn" data-sms="'+escA(r.id)+'" href="sms:'+escA(String(r.to||'').replace(/[^+\d]/g,''))+'?&body='+encodeURIComponent(r.message||'')+'">💬 Send Text</a>';}
+      acts='<a class="abtn smsbtn" data-sms="'+escA(r.id)+'" href="'+smsHref+'">💬 Send Text</a>';}
     undo='<button class="undo" data-undo="'+escA(r.id)+'">undo</button>';
   } else if(st==='completed'){
     line=r.sentat?'<div class="sent">✓ Sent '+fmt(r.sentat)+'</div>'
                  :'<div class="sent">✓ Handled — no send needed'+((r.notes||'').indexOf('already handled')>-1?' ('+esc(r.notes.split('·').pop().trim())+')':'')+'</div>';
+    if(!em&&r.sentat)undo='<button class="undo" data-txundo="'+escA(r.id)+'">undo</button>';
   } else if(st==='deferred'){
     acts='<button class="abtn defer" data-restore="'+escA(r.id)+'">Bring back</button>';
     if((r.notes||'').indexOf('send failed')>-1)line='<div class="queue">⚠ '+esc(r.notes)+'</div>';
   }
-  var box=(st==='pending'||st==='deferred')?'<button class="box" data-ok="'+escA(r.id)+'" title="Approve"></button>':'<span class="box"></span>';
+  var box;
+  if(st==='pending'||st==='deferred'){
+    box=em?'<button class="box" data-ok="'+escA(r.id)+'" title="Approve"></button>'
+          :'<span class="box txwait" title="Texts send with the Send Text button"></span>';
+    if(st==='deferred'&&!em)box='<span class="box txwait"></span>';
+  } else box='<span class="box"></span>';
   var toLine=r.to?'<div class="sub">To <b>'+esc(r.name||'')+'</b> · '+esc(r.to)+'</div>':'';
   var reason=r.reason?'<div class="reason">'+esc(r.reason)+'</div>':'';
   return '<div class="'+cls+'">'+box+'<div class="bodyc">'
@@ -211,6 +222,8 @@ document.getElementById('pills').addEventListener('click',function(e){
 document.getElementById('list').addEventListener('click',function(e){
   var s=e.target.closest('[data-sms]');
   if(s){act(s.getAttribute('data-sms'),'sent','Marked sent — your Messages app is opening.');return;}
+  var tu=e.target.closest('[data-txundo]');
+  if(tu){act(tu.getAttribute('data-txundo'),'restore','Pulled back — it’s in To Approve again.');return;}
   var o=e.target.closest('[data-ok]');
   if(o){act(o.getAttribute('data-ok'),'approve','Approved — it sends on the next hourly run.');return;}
   var u=e.target.closest('[data-undo]');
