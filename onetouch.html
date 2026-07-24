@@ -131,7 +131,8 @@ function card(r){
       acts='<a class="abtn smsbtn" data-sms="'+escA(r.id)+'" href="sms:'+escA(String(r.to||'').replace(/[^+\d]/g,''))+'?&body='+encodeURIComponent(r.message||'')+'">💬 Send Text</a>';}
     undo='<button class="undo" data-undo="'+escA(r.id)+'">undo</button>';
   } else if(st==='completed'){
-    line='<div class="sent">✓ Sent'+(r.sentat?' '+fmt(r.sentat):'')+'</div>';
+    line=r.sentat?'<div class="sent">✓ Sent '+fmt(r.sentat)+'</div>'
+                 :'<div class="sent">✓ Handled — no send needed'+((r.notes||'').indexOf('already handled')>-1?' ('+esc(r.notes.split('·').pop().trim())+')':'')+'</div>';
   } else if(st==='deferred'){
     acts='<button class="abtn defer" data-restore="'+escA(r.id)+'">Bring back</button>';
     if((r.notes||'').indexOf('send failed')>-1)line='<div class="queue">⚠ '+esc(r.notes)+'</div>';
