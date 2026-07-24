@@ -172,6 +172,7 @@ function card(r){
     +(r.to?'<div class="toline">To '+esc(r.name||'')+' · '+esc(r.to)+(st==='approved'&&em?' · sends within the hour from Jen’s Gmail':'')+(st==='completed'&&r.sentat?' · sent '+fmt(r.sentat):'')+'</div>':'')
     +'<div class="acts">';
   if(st==='pending'){
+    if(String(r.altmessage||'').trim())d+='<button class="sbtn" data-switch="'+escA(r.id)+'">&#8646; Send as '+(em?'text':'email')+' instead</button>';
     d+='<button class="sbtn" data-skip="'+escA(r.id)+'">&#10005; Skip</button>'
       +'<button class="sbtn" data-defer="'+escA(r.id)+'">Later</button>';
   } else if(st==='approved'){
@@ -179,8 +180,9 @@ function card(r){
   } else if(st==='completed'&&!em&&r.sentat){
     d+='<button class="undo" data-txundo="'+escA(r.id)+'">undo — bring it back</button>';
   } else if(st==='deferred'){
-    d+='<button class="sbtn" data-restore="'+escA(r.id)+'">Bring back</button>'
-      +'<button class="sbtn" data-skip="'+escA(r.id)+'">&#10005; Skip</button>';
+    d+='<button class="sbtn" data-restore="'+escA(r.id)+'">Bring back</button>';
+    if(String(r.altmessage||'').trim())d+='<button class="sbtn" data-switch="'+escA(r.id)+'">&#8646; Send as '+(em?'text':'email')+' instead</button>';
+    d+='<button class="sbtn" data-skip="'+escA(r.id)+'">&#10005; Skip</button>';
   }
   if(r.fubpersonid&&r.fubpersonid!=='0')d+='<a class="sbtn fu" target="_blank" rel="noopener" href="'+FUB+escA(r.fubpersonid)+'">FUB &#8599;</a>';
   d+='</div></div>';
@@ -194,11 +196,14 @@ function card(r){
 }
 function draw(){
   var live=ROWS.filter(function(r){return r.status.toLowerCase()!=='canceled';});
-  var trigs={};live.forEach(function(r){if(r.trigger){var k=r.trigger.toLowerCase();trigs[k]=(trigs[k]||0)+1;}});
+  var trigs={},pcounts={};
+  live.forEach(function(r){if(r.trigger){var k=r.trigger.toLowerCase();trigs[k]=1;
+    if(r.status.toLowerCase()==='pending')pcounts[k]=(pcounts[k]||0)+1;}});
+  var pendTotal=live.filter(function(r){return r.status.toLowerCase()==='pending';}).length;
   var tk=Object.keys(trigs).sort();if(FIL!=='all'&&!trigs[FIL])FIL='all';
   document.getElementById('pills').innerHTML=tk.length>1?['all'].concat(tk).map(function(k){
-    var n=k==='all'?live.length:trigs[k];
-    return '<button data-f="'+escA(k)+'"'+(FIL===k?' class="active"':'')+'>'+esc(k)+' '+n+'</button>';}).join(''):'';
+    var n=k==='all'?pendTotal:(pcounts[k]||0);
+    return '<button data-f="'+escA(k)+'"'+(FIL===k?' class="active"':'')+'>'+esc(k)+(n?' '+n:'')+'</button>';}).join(''):'';
   var vis=live.filter(function(r){return FIL==='all'||String(r.trigger||'').toLowerCase()===FIL;});
   var pend=vis.filter(function(r){return r.status.toLowerCase()==='pending';});
   document.getElementById('nP').textContent=live.filter(function(r){return r.status.toLowerCase()==='pending';}).length||'';
@@ -291,6 +296,22 @@ document.getElementById('list').addEventListener('click',function(e){
       bb.classList.add('armed');bb.textContent='Tap again to approve '+ids.length;
       setTimeout(function(){if(bb.isConnected&&!bb.disabled){bb.classList.remove('armed');bb.innerHTML='&#10003; Approve all '+ids.length+' emails';}},3000);
     }
+    return;
+  }
+  var sw=e.target.closest('[data-switch]');
+  if(sw){
+    var rid=sw.getAttribute('data-switch');var r=byId(rid);if(!r)return;
+    var prev={channel:r.channel,to:r.to,subject:r.subject,message:r.message,altto:r.altto,altsubject:r.altsubject,altmessage:r.altmessage};
+    var nc=(r.channel||'text').toLowerCase()==='email'?'text':'email';
+    r.channel=nc;r.to=prev.altto;r.subject=prev.altsubject;r.message=prev.altmessage;
+    r.altto=prev.to;r.altsubject=prev.subject;r.altmessage=prev.message;
+    draw();
+    var rowEl=document.querySelector('.row[data-cid="'+rid+'"]');if(rowEl)rowEl.classList.add('open');
+    toast('Switched to '+nc+'.');
+    api({action:'ui_act',id:rid,act:'switch'}).then(function(res){
+      if(res&&res.auth===false){Object.assign(r,prev);draw();authFail(res.error||'Sign-in expired.');return;}
+      if(!res||!res.ok){Object.assign(r,prev);draw();toast(res&&res.error?res.error:'Couldn’t switch — the queue script needs v7.');}
+    }).catch(function(){Object.assign(r,prev);draw();toast('Couldn’t switch — try again.');});
     return;
   }
   var s=e.target.closest('[data-sms]');
