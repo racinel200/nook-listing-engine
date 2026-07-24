@@ -7,10 +7,11 @@
 <meta name="theme-color" content="#faf8f4">
 <link rel="icon" type="image/png" href="favicon.png">
 <title>One-Touch Correspondence — Nook</title>
-<!-- This page is PUBLIC but holds zero data. Jen signs in with Google; every
-     API call carries her Google-signed ID token, and the private queue's
-     Apps Script verifies it server-side (her email + our OAuth client id)
-     before returning or changing anything. Anyone else is refused. -->
+<!-- This page is PUBLIC but holds zero data. Visitors sign in with Google;
+     every API call carries their Google-signed ID token, and the private
+     queue's Apps Script verifies it server-side (our OAuth client id + the
+     allowlist in the queue's Config `allowedUsers` row) before returning or
+     changing anything. Anyone not on Jen's list is refused. -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root{--nook:#c3233d;--nook-d:#8f1a2d;--ink:#221f1f;--muted:#8a827c;--cream:#faf8f4;--line:#f0ebe2;--gold:#c9a86a;--sage:#5a7a5e;--blue:#3f6fae;--blue-bg:#e8eef7}
@@ -73,7 +74,7 @@
   </header>
   <div class="panel">
     <div id="gate">
-      <p>This page is private &mdash; sign in with your Google account to open your queue.<br>(Only jennifer@nookrealtygroup.com gets in.)</p>
+      <p>This page is private &mdash; sign in with your Google account to open the queue.<br>(Only accounts on Jen&rsquo;s approved list get in.)</p>
       <div id="gbtn"></div>
       <p id="gateErr" style="color:var(--nook);display:none"></p>
     </div>
